@@ -80,6 +80,11 @@ readPerson fp = do
     hoistEither $ parsePerson p
     
 
+writePerson :: FilePath -> Person -> IO ()
+writePerson fp p = writeFile fp $ unpack $  
+    "Name " `append` (personName p) `append` "\n" `append`
+    "ID " `append` (pack $ show $ personId p)
+
 parsePerson :: String -> Either ParseError Person
 parsePerson = parse personParser "b"
 
