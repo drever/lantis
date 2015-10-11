@@ -1,0 +1,23 @@
+Name:           Lantis
+Version:        0.0
+Cabal-Version:  >= 1.2
+License:        BSD3
+Author:         Johannes Drever
+Synopsis:       A bug tracking system
+Build-Type:     Simple
+
+Executable lantis
+  Build-Depends:  servant-server
+                , generic-aeson
+                , warp
+                , wai
+                , aeson
+                , text
+                , base
+                , time
+                , either
+                , mtl
+                , parsec
+  Main-Is:        main.hs
+  Hs-Source-Dirs: src
+

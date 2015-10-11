@@ -1,6 +1,11 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeOperators #-}
+
 import Data.Text
 import Data.Time
 
@@ -8,6 +13,12 @@ import Control.Monad.Trans.Either
 import Control.Monad.Trans
 
 import Text.ParserCombinators.Parsec
+
+import Data.Aeson
+import GHC.Generics
+import Network.Wai
+import Network.Wai.Handler.Warp
+import Servant
 
 data Status = New | Feedback | Acknowledged | Confirmed | Assigned | Resovled | Closed deriving (Show)
 
@@ -20,7 +31,7 @@ data Project = Project {
 data Person = Person {
     personName :: Text
   , personId :: Int
-} deriving (Show)
+} deriving (Show, Generic)
 
 type Category = Text
 
@@ -97,8 +108,25 @@ personParser = do
 preferenceParser p = do
     n <- string p
     spaces
-    m <- many alphaNum
+    m <- many $ alphaNum
     return m
 
+-- Servant
+--
 
 
+instance ToJSON Person
+
+type PersonAPI = "person" :> Capture "id" Int :> Get '[JSON] Person
+
+server :: Int -> EitherT ServantErr IO Person
+server x = bimapEitherT (const err404) id $ readPerson ("examples/" ++ (show x))
+
+personAPI :: Proxy PersonAPI
+personAPI = Proxy
+
+app :: Application
+app = serve personAPI server
+
+main :: IO ()
+main = run 8081 app
