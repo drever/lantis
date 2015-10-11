@@ -74,33 +74,20 @@ readIssue = undefined
 writeIssue :: FilePath -> Issue -> IO ()
 writeIssue = undefined
 
-readPerson' :: String -> Either ParseError Person
-readPerson' c = parse parsePerson "(unkown)" c
-
 parsePerson :: String -> Either ParseError Person
-parsePerson s = 
-    let ss = parsePerson' s
-    in do r <- do n <- nameFromList ss
-                  return (Person n 1)
-          case r of
-              Nothing -> fail "Not all properties found"
-              (Just p) -> return p
-       
-parsePerson' :: String -> Either ParseError [[String]]
-parsePerson' input = parse personFile "(unknown)" input
+parsePerson = parse personParser "b"
+
+personParser = do
+    n <- pack `fmap` preferenceParser "Name"
+    char '\n' 
+    i <- read `fmap` preferenceParser "ID"
+    return $ Person n i
+
+preferenceParser p = do
+    n <- string p
+    spaces
+    m <- many alphaNum
+    return m
 
 
-nameFromList :: [[String]] -> Maybe String
-nameFromList [] = Nothing
-nameFromList ((n:ns):xs) = 
-    if (n == "Name") 
-    then Just $ intercalate " " ns
-    else nameFromList xs
 
-personFile = endBy line eol
-line = sepBy cell (char ' ')
-cell = many (noneOf " \n")
-eol = char '\n'
-
---name = string "Name"
---id = string "ID"
