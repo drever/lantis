@@ -74,6 +74,12 @@ readIssue = undefined
 writeIssue :: FilePath -> Issue -> IO ()
 writeIssue = undefined
 
+readPerson :: FilePath -> EitherT ParseError IO Person
+readPerson fp = do
+    p <- (lift $ readFile fp) 
+    hoistEither $ parsePerson p
+    
+
 parsePerson :: String -> Either ParseError Person
 parsePerson = parse personParser "b"
 
