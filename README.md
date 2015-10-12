@@ -9,6 +9,7 @@
 
 # Rest API
 * Servant
+   -> Write
 
 # Frontend
 

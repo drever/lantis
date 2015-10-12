@@ -87,14 +87,14 @@ writeIssue = undefined
 
 readPerson :: FilePath -> EitherT ParseError IO Person
 readPerson fp = do
-    p <- (lift $ readFile fp) 
+    p <- lift $ readFile fp 
     hoistEither $ parsePerson p
     
 
 writePerson :: FilePath -> Person -> IO ()
 writePerson fp p = writeFile fp $ unpack $  
-    "Name " `append` (personName p) `append` "\n" `append`
-    "ID " `append` (pack $ show $ personId p)
+    "Name " `append` personName p `append` "\n" `append`
+    "ID " `append` pack (show $ personId p)
 
 parsePerson :: String -> Either ParseError Person
 parsePerson = parse personParser "b"
@@ -108,8 +108,7 @@ personParser = do
 preferenceParser p = do
     n <- string p
     spaces
-    m <- many $ alphaNum
-    return m
+    many alphaNum
 
 -- Servant
 --
@@ -120,7 +119,7 @@ instance ToJSON Person
 type PersonAPI = "person" :> Capture "id" Int :> Get '[JSON] Person
 
 server :: Int -> EitherT ServantErr IO Person
-server x = bimapEitherT (const err404) id $ readPerson ("examples/" ++ (show x))
+server x = bimapEitherT (const err404) id $ readPerson $ "examples/" ++ show x
 
 personAPI :: Proxy PersonAPI
 personAPI = Proxy
