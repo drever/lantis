@@ -18,6 +18,7 @@ Executable lantis
                 , either
                 , mtl
                 , parsec
+                , directory
   Main-Is:        main.hs
   Hs-Source-Dirs: src
 

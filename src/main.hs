@@ -6,8 +6,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeOperators #-}
 
-import Data.Text
+import Data.Text hiding (maximum, map, filter, null)
 import Data.Time
+
+import System.Directory
 
 import Control.Monad.Trans.Either
 import Control.Monad.Trans
@@ -96,19 +98,40 @@ writeUser fp p = writeFile fp $ unpack $
     "Name " `append` userName p `append` "\n" `append`
     "ID " `append` pack (show $ userId p)
 
+nextFreeUserId :: FilePath -> IO Int
+nextFreeUserId fp = do
+    c <- (map read . filter (\p -> p /= "." && p /= "..")) `fmap` getDirectoryContents fp
+    if null c 
+        then return 1 
+        else return $ maximum c + 1
+
+listUser :: FilePath -> EitherT ParseError IO [User]
+listUser fp = do
+    f <- liftIO $ filter (\p -> p /= "." && p /= "..") `fmap` getDirectoryContents fp
+    mapM (readUser . ((fp ++ "/") ++)) f
+ 
+createUser :: FilePath -> Text -> IO User
+createUser fp n = do
+    i <- nextFreeUserId fp
+    let u = User n i
+    writeUser (fp ++"/" ++ show i) u
+    return u 
+
+-- Parser
 parseUser :: String -> Either ParseError User
-parseUser = parse userParser "b"
+parseUser = parse userParser "Could not parse user"
 
 userParser = do
     n <- pack `fmap` preferenceParser "Name"
-    char '\n' 
     i <- read `fmap` preferenceParser "ID"
     return $ User n i
 
 preferenceParser p = do
     n <- string p
     spaces
-    many alphaNum
+    m <- many $ noneOf "\n"
+    char '\n'
+    return m
 
 -- Servant
 --
