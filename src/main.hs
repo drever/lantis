@@ -28,9 +28,9 @@ data Project = Project {
   , projectIssues :: [Issue]
 } deriving (Show)
 
-data Person = Person {
-    personName :: Text
-  , personId :: Int
+data User = User {
+    userName :: Text
+  , userId :: Int
 } deriving (Show, Generic)
 
 type Category = Text
@@ -48,7 +48,7 @@ data Relationship = RelationshipParent Issue Issue | RelationshipRelated Issue I
 data ViewStatus = Public | Private deriving (Show)
 
 data Comment = Comment {
-    commentCommenter :: Person
+    commentCommenter :: User
   , commentId :: Int
   , commentText :: Text
   , commentDate :: UTCTime
@@ -65,9 +65,9 @@ data Issue = Issue {
   , issueCategory :: Maybe Category 
   , issueDateSubmitted :: UTCTime
   , issueLastUpdate :: UTCTime
-  , issueReporter :: Person
+  , issueReporter :: User
   , issueViewStatus :: ViewStatus
-  , issueAssignedTo :: Maybe Person
+  , issueAssignedTo :: Maybe User
   , issueSeverity :: Maybe Severity
   , issuePriority :: Maybe Priority
   , issueReproducibility :: Maybe Reproducibility 
@@ -85,25 +85,25 @@ readIssue = undefined
 writeIssue :: FilePath -> Issue -> IO ()
 writeIssue = undefined
 
-readPerson :: FilePath -> EitherT ParseError IO Person
-readPerson fp = do
+readUser :: FilePath -> EitherT ParseError IO User
+readUser fp = do
     p <- lift $ readFile fp 
-    hoistEither $ parsePerson p
+    hoistEither $ parseUser p
     
 
-writePerson :: FilePath -> Person -> IO ()
-writePerson fp p = writeFile fp $ unpack $  
-    "Name " `append` personName p `append` "\n" `append`
-    "ID " `append` pack (show $ personId p)
+writeUser :: FilePath -> User -> IO ()
+writeUser fp p = writeFile fp $ unpack $  
+    "Name " `append` userName p `append` "\n" `append`
+    "ID " `append` pack (show $ userId p)
 
-parsePerson :: String -> Either ParseError Person
-parsePerson = parse personParser "b"
+parseUser :: String -> Either ParseError User
+parseUser = parse userParser "b"
 
-personParser = do
+userParser = do
     n <- pack `fmap` preferenceParser "Name"
     char '\n' 
     i <- read `fmap` preferenceParser "ID"
-    return $ Person n i
+    return $ User n i
 
 preferenceParser p = do
     n <- string p
@@ -114,18 +114,18 @@ preferenceParser p = do
 --
 
 
-instance ToJSON Person
+instance ToJSON User
 
-type PersonAPI = "person" :> Capture "id" Int :> Get '[JSON] Person
+type UserAPI = "user" :> Capture "id" Int :> Get '[JSON] User
 
-server :: Int -> EitherT ServantErr IO Person
-server x = bimapEitherT (const err404) id $ readPerson $ "examples/" ++ show x
+server :: Int -> EitherT ServantErr IO User
+server x = bimapEitherT (const err404) id $ readUser $ "user/" ++ show x
 
-personAPI :: Proxy PersonAPI
-personAPI = Proxy
+userAPI :: Proxy UserAPI
+userAPI = Proxy
 
 app :: Application
-app = serve personAPI server
+app = serve userAPI server
 
 main :: IO ()
 main = run 8081 app
