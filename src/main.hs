@@ -96,7 +96,7 @@ readUser fp = do
 writeUser :: FilePath -> User -> IO ()
 writeUser fp p = writeFile fp $ unpack $  
     "Name " `append` userName p `append` "\n" `append`
-    "ID " `append` pack (show $ userId p)
+    "ID " `append` pack (show $ userId p) `append` "\n"
 
 nextFreeUserId :: FilePath -> IO Int
 nextFreeUserId fp = do
@@ -142,7 +142,7 @@ instance ToJSON User
 type UserAPI = "user" :> Capture "id" Int :> Get '[JSON] User
 
 server :: Int -> EitherT ServantErr IO User
-server x = bimapEitherT (const err404) id $ readUser $ "user/" ++ show x
+server x = bimapEitherT (const err404) id $ readUser $ "data/user/" ++ show x
 
 userAPI :: Proxy UserAPI
 userAPI = Proxy
