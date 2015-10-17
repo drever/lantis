@@ -139,13 +139,17 @@ preferenceParser p = do
 
 instance ToJSON User
 
-type UserAPI = "user" :> Capture "id" Int :> Get '[JSON] User
+type UserAPI = "user" :> Get '[JSON] User
+          :<|> "myuser" :> Get '[JSON] User
 
-server :: Int -> EitherT ServantErr IO User
-server x = bimapEitherT (const err404) id $ readUser $ "data/user/" ++ show x
+myuser = User "Test 123" 15
 
 userAPI :: Proxy UserAPI
 userAPI = Proxy
+
+--server :: Int -> EitherT ServantErr IO User
+server =   return (User "3333" 5)--bimapEitherT (const err404) id $ readUser $ "data/user/" ++ show x
+      :<|> return myuser
 
 app :: Application
 app = serve userAPI server
