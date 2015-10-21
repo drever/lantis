@@ -5,7 +5,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeOperators #-}
 
-import Data.Text hiding (maximum, map, filter, null)
+import qualified Data.Text as T
 import Data.Time
 
 import System.Directory
@@ -27,17 +27,17 @@ import Servant
 data Status = New | Feedback | Acknowledged | Confirmed | Assigned | Resovled | Closed deriving (Show)
 
 data Project = Project {
-    projectName :: Text
+    projectName :: T.Text
   , projectId :: Int
   , projectIssues :: [Issue]
 } deriving (Show)
 
 data User = User {
-    userName :: Text
+    userName :: T.Text
   , userId :: Int
 } deriving (Show, Generic)
 
-type Category = Text
+type Category = T.Text
 
 data Priority = Low | High | Urgent deriving (Show)
 
@@ -54,15 +54,15 @@ data ViewStatus = Public | Private deriving (Show)
 data Comment = Comment {
     commentCommenter :: User
   , commentId :: Int
-  , commentText :: Text
+  , commentText :: T.Text
   , commentDate :: UTCTime
 } deriving (Show)
 
 data Issue = Issue {
     issueState :: Status
-  , issueSummary :: Text
-  , issueDescription :: Text 
-  , issueTags :: [Text]
+  , issueSummary :: T.Text
+  , issueDescription :: T.Text 
+  , issueTags :: [T.Text]
   , issueRelationships :: [Relationship]
   , issueId :: Int
   , issueProject :: Project
@@ -107,9 +107,9 @@ readUser fp = do
     
 
 writeUser :: FilePath -> User -> IO ()
-writeUser fp p = writeFile fp $ unpack $  
-    "Name " `append` userName p `append` "\n" `append`
-    "ID " `append` pack (show $ userId p) `append` "\n"
+writeUser fp p = writeFile fp $ T.unpack $  
+    "Name " `T.append` userName p `T.append` "\n" `T.append`
+    "ID " `T.append` T.pack (show $ userId p) `T.append` "\n"
 
 nextFreeUserId :: FilePath -> IO Int
 nextFreeUserId fp = do
@@ -123,7 +123,7 @@ listUser fp = do
     f <- liftIO $ filter (\p -> p /= "." && p /= "..") `fmap` getDirectoryContents fp
     mapM (readUser . ((fp ++ "/") ++)) f
  
-createUser :: FilePath -> Text -> IO User
+createUser :: FilePath -> T.Text -> IO User
 createUser fp n = do
     i <- nextFreeUserId fp
     let u = User n i
@@ -135,7 +135,7 @@ parseUser :: String -> Either ParseError User
 parseUser = parse userParser "Could not parse user"
 
 userParser = do
-    n <- pack `fmap` preferenceParser "Name"
+    n <- T.pack `fmap` preferenceParser "Name"
     i <- read `fmap` preferenceParser "ID"
     return $ User n i
 
