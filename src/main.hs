@@ -21,6 +21,9 @@ import Network.Wai
 import Network.Wai.Handler.Warp
 import Servant
 
+-- 
+-- ADTs
+
 data Status = New | Feedback | Acknowledged | Confirmed | Assigned | Resovled | Closed deriving (Show)
 
 data Project = Project {
@@ -74,6 +77,17 @@ data Issue = Issue {
   , issueReproducibility :: Maybe Reproducibility 
   , issueResolution :: Maybe Resolution
 } deriving (Show)
+
+-- | Environment
+--
+
+userDir = "data/user/"
+
+-- | 
+-- Data manipulation
+
+userChangeId :: User -> Int -> User
+userChangeId (User n i) i' = User n i'
 
 -- |
 -- IO
@@ -137,19 +151,32 @@ preferenceParser p = do
 
 
 instance ToJSON User
+instance FromJSON User
 
-type UserAPI = "user" :> Get '[JSON] User
-          :<|> "myuser" :> Get '[JSON] User
+type UserAPI = "user" :> Capture "id" Int :> Get '[JSON] User
+         :<|> "myuser" :> Get '[JSON] User
+         :<|> "users" :> ReqBody '[JSON] User :> Post '[JSON] User
+         :<|> "users" :> Get '[JSON] [User]
 
 myuser = User "Test 123" 15
 
 userAPI :: Proxy UserAPI
 userAPI = Proxy
 
---server :: Int -> EitherT ServantErr IO User
-server =   return (User "3333" 5)--bimapEitherT (const err404) id $ readUser $ "data/user/" ++ show x
-      :<|> return myuser
-
+server = (\x -> bimapEitherT (const err501) id $ readUser $ userDir ++ show x)
+    :<|> (do
+             liftIO $ putStrLn "Test"
+             return myuser)
+    :<|> (\u -> lift $ do
+                  putStrLn $ show u
+                  i <- nextFreeUserId userDir
+                  let u' = userChangeId u i
+                  writeUser (userDir ++ show i) u'
+                  return u')
+   :<|> do
+           liftIO $ putStrLn "Listing all users"
+           bimapEitherT (const err501) id $ listUser userDir
+ 
 app :: Application
 app = serve userAPI server
 
