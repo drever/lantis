@@ -20,40 +20,45 @@ import GHC.Generics
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Servant
+import Servant.HTML.Blaze
 
 -- 
 -- ADTs
 
-data Status = New | Feedback | Acknowledged | Confirmed | Assigned | Resovled | Closed deriving (Show)
+data Status = New | Feedback | Acknowledged | Confirmed | Assigned | Resovled | Closed deriving (Show, Read, Generic)
 
 data Project = Project {
     projectName :: T.Text
-  , projectId :: Int
+  , projectId :: ProjectId
   , projectIssues :: [Issue]
 } deriving (Show)
 
 data User = User {
     userName :: T.Text
-  , userId :: Int
+  , userId :: UserId
 } deriving (Show, Generic)
 
 type Category = T.Text
+type ProjectId = Int
+type UserId = Int
+type IssueId = Int
+type CommentId = Int
 
-data Priority = Low | High | Urgent deriving (Show)
+data Priority = Low | High | Urgent deriving (Show, Generic)
 
-data Severity = Minor | Major deriving (Show)
+data Severity = Minor | Major deriving (Show, Generic)
 
-data Reproducibility = Sometimes | Always deriving (Show)
+data Reproducibility = Sometimes | Always deriving (Show, Generic)
 
-data Resolution = ResolutionOpen | ResolutionClosed deriving (Show)
+data Resolution = ResolutionOpen | ResolutionClosed deriving (Show, Generic)
 
-data Relationship = RelationshipParent Issue Issue | RelationshipRelated Issue Issue deriving (Show)
+data Relationship = RelationshipParent IssueId | RelationshipRelated IssueId deriving (Show, Generic)
 
-data ViewStatus = Public | Private deriving (Show)
+data ViewStatus = Public | Private deriving (Show, Read, Generic)
 
 data Comment = Comment {
     commentCommenter :: User
-  , commentId :: Int
+  , commentId :: CommentId
   , commentText :: T.Text
   , commentDate :: UTCTime
 } deriving (Show)
@@ -64,24 +69,25 @@ data Issue = Issue {
   , issueDescription :: T.Text 
   , issueTags :: [T.Text]
   , issueRelationships :: [Relationship]
-  , issueId :: Int
-  , issueProject :: Project
+  , issueId :: IssueId
+  , issueProject :: ProjectId
   , issueCategory :: Maybe Category 
   , issueDateSubmitted :: UTCTime
   , issueLastUpdate :: UTCTime
-  , issueReporter :: User
+  , issueReporter :: UserId
   , issueViewStatus :: ViewStatus
-  , issueAssignedTo :: Maybe User
+  , issueAssignedTo :: Maybe UserId
   , issueSeverity :: Maybe Severity
   , issuePriority :: Maybe Priority
   , issueReproducibility :: Maybe Reproducibility 
   , issueResolution :: Maybe Resolution
-} deriving (Show)
+} deriving (Show, Generic)
 
 -- | Environment
 --
 
 userDir = "data/user/"
+issueDir = "data/issue/"
 
 -- | 
 -- Data manipulation
@@ -93,12 +99,6 @@ userChangeId (User n i) i' = User n i'
 -- IO
 
 type GeneralError = String
-
-readIssue :: FilePath -> IO Issue
-readIssue = undefined
-
-writeIssue :: FilePath -> Issue -> IO ()
-writeIssue = undefined
 
 readUser :: FilePath -> EitherT ParseError IO User
 readUser fp = do
@@ -130,15 +130,52 @@ createUser fp n = do
     writeUser (fp ++"/" ++ show i) u
     return u 
 
+readIssue :: FilePath -> EitherT ParseError IO Issue
+readIssue fp = do
+    p <- lift $ readFile fp
+    hoistEither $ parseIssue p
+
 -- Parser
 parseUser :: String -> Either ParseError User
 parseUser = parse userParser "Could not parse user"
 
+userParser :: GenParser Char st User
 userParser = do
     n <- T.pack `fmap` preferenceParser "Name"
     i <- read `fmap` preferenceParser "ID"
     return $ User n i
 
+parseIssue :: String -> Either ParseError Issue
+parseIssue = parse issueParser "Could not parse issue"
+
+issueParser :: GenParser Char st Issue
+issueParser = do
+    i <- read `fmap` preferenceParser "ID"
+    p <- read `fmap` preferenceParser "Project"
+    s <- read `fmap` preferenceParser "Status"
+    su <- T.pack `fmap` preferenceParser "Summary"
+    d <- T.pack `fmap` preferenceParser "Description"
+    return $
+        Issue
+	    s -- status
+	    su --summary 
+	    d --description
+	    [] -- tags
+	    [] -- relationships
+	    i -- issueId 
+	    p -- issueProject :: ProjectId
+	    Nothing -- issueCategory :: Maybe Category 
+	    (UTCTime (fromGregorian 1970 0 0) 0)--issueDateSubmitted :: UTCTime
+	    (UTCTime (fromGregorian 1970 0 0) 0)--issueLastUpdate :: UTCTime
+	    0 --issueReporter :: UserId
+	    Public --issueViewStatus :: ViewStatus
+	    Nothing --issueAssignedTo :: Maybe User
+	    Nothing --issueSeverity :: Maybe Severity
+	    Nothing --issuePriority :: Maybe Priority
+	    Nothing --issueReproducibility :: Maybe Reproducibility 
+	    Nothing --issueResolution :: Maybe Resolution
+
+preferenceParser :: String -> GenParser Char st String
 preferenceParser p = do
     n <- string p
     spaces
@@ -153,10 +190,35 @@ preferenceParser p = do
 instance ToJSON User
 instance FromJSON User
 
-type UserAPI = "user" :> Capture "id" Int :> Get '[JSON] User
+instance ToJSON Issue
+instance FromJSON Issue
+
+instance ToJSON Status
+instance FromJSON Status
+
+instance ToJSON Priority
+instance FromJSON Priority
+
+instance ToJSON Severity
+instance FromJSON Severity
+
+instance ToJSON Reproducibility
+instance FromJSON Reproducibility
+
+instance FromJSON Resolution
+instance ToJSON Resolution
+
+instance FromJSON Relationship
+instance ToJSON Relationship
+
+instance FromJSON ViewStatus
+instance ToJSON ViewStatus
+
+type UserAPI = "user" :> Capture "id" UserId :> Get '[JSON] User
          :<|> "myuser" :> Get '[JSON] User
          :<|> "users" :> ReqBody '[JSON] User :> Post '[JSON] User
          :<|> "users" :> Get '[JSON] [User]
+         :<|> "issue" :> Capture "id" IssueId :> Get '[JSON] Issue
 
 myuser = User "Test 123" 15
 
@@ -176,7 +238,8 @@ server = (\x -> bimapEitherT (const err501) id $ readUser $ userDir ++ show x)
    :<|> do
            liftIO $ putStrLn "Listing all users"
            bimapEitherT (const err501) id $ listUser userDir
- 
+   :<|> (\x -> bimapEitherT (const err501) id $ readIssue $ issueDir ++ show x)
+
 app :: Application
 app = serve userAPI server
 
