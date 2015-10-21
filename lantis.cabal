@@ -9,6 +9,8 @@ Build-Type:     Simple
 Executable lantis
   Build-Depends:  servant-server
                 , servant-blaze
+                , blaze-markup
+                , blaze-html
                 , generic-aeson
                 , warp
                 , wai

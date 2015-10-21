@@ -14,6 +14,8 @@ import Control.Monad.Trans.Either
 import Control.Monad.Trans
 
 import Text.ParserCombinators.Parsec
+import qualified Text.Blaze as B
+import qualified Text.Blaze.Html4.Strict as BH
 
 import Data.Aeson
 import GHC.Generics
@@ -183,6 +185,18 @@ preferenceParser p = do
     char '\n'
     return m
 
+-- Blaze
+--
+
+instance B.ToMarkup Issue where
+    toMarkup i = BH.html $ do
+        BH.head $ do
+            BH.title "lantis issue tracker"
+        BH.body $ do
+            BH.p $ BH.toMarkup $ "Issue number " ++ (show $ issueId i)
+            BH.string $ "Status " ++ (show $ issueState i)
+            BH.h1 $ BH.string (show $ issueSummary i)
+            BH.string (show $ issueDescription i)
 -- Servant
 --
 
@@ -218,7 +232,7 @@ type UserAPI = "user" :> Capture "id" UserId :> Get '[JSON] User
          :<|> "myuser" :> Get '[JSON] User
          :<|> "users" :> ReqBody '[JSON] User :> Post '[JSON] User
          :<|> "users" :> Get '[JSON] [User]
-         :<|> "issue" :> Capture "id" IssueId :> Get '[JSON] Issue
+         :<|> "issue" :> Capture "id" IssueId :> Get '[HTML] Issue
 
 myuser = User "Test 123" 15
 
