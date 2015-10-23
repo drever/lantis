@@ -24,6 +24,11 @@ import Network.Wai.Handler.Warp
 import Servant
 import Servant.HTML.Blaze
 
+-- util
+--
+listDirectory :: FilePath -> IO [FilePath]
+listDirectory fp = fmap (filter (\p -> p /= "." && p /= "..")) (getDirectoryContents  fp)
+
 -- 
 -- ADTs
 
@@ -32,7 +37,7 @@ data Status = New | Feedback | Acknowledged | Confirmed | Assigned | Resovled | 
 data Project = Project {
     projectName :: T.Text
   , projectId :: ProjectId
-  , projectIssues :: [Issue]
+  , projectIssues :: [IssueId]
 } deriving (Show)
 
 data User = User {
@@ -40,7 +45,8 @@ data User = User {
   , userId :: UserId
 } deriving (Show, Generic)
 
-type Category = T.Text
+data Category = Bug | Feature | ActionItem deriving (Show, Read, Generic)
+
 type ProjectId = Int
 type UserId = Int
 type IssueId = Int
@@ -90,6 +96,7 @@ data Issue = Issue {
 
 userDir = "data/user/"
 issueDir = "data/issue/"
+projectDir = "data/project/"
 
 -- | 
 -- Data manipulation
@@ -102,32 +109,41 @@ userChangeId (User n i) i' = User n i'
 
 type GeneralError = String
 
+readData :: (String -> Either ParseError a) -> FilePath -> EitherT ParseError IO a
+readData parser fp = do
+    p <- lift $ readFile fp
+    hoistEither $ parser p 
+
 readUser :: FilePath -> EitherT ParseError IO User
-readUser fp = do
-    p <- lift $ readFile fp 
-    hoistEither $ parseUser p
+readUser = readData parseUser
     
 
 writeUser :: FilePath -> User -> IO ()
 writeUser fp p = writeFile fp $ T.unpack $  
-    "Name " `T.append` userName p `T.append` "\n" `T.append`
-    "ID " `T.append` T.pack (show $ userId p) `T.append` "\n"
+    "ID " `T.append` T.pack (show $ userId p) `T.append` "\n" `T.append`
+    "Name " `T.append` userName p `T.append` "\n"
 
-nextFreeUserId :: FilePath -> IO Int
-nextFreeUserId fp = do
-    c <- (map read . filter (\p -> p /= "." && p /= "..")) `fmap` getDirectoryContents fp
+writeProject :: FilePath -> Project -> IO ()
+writeProject fp p = writeFile fp $ T.unpack $
+    "ID " `T.append` T.pack (show $ projectId p) `T.append` "\n" `T.append`
+    "Name " `T.append` projectName p `T.append` "\n" `T.append`
+    "Issues " `T.append` T.pack (show $ projectIssues p) `T.append` "\n"
+
+nextId :: FilePath -> IO Int
+nextId fp = do
+    c <- (map read) `fmap` (listDirectory fp)
     if null c 
         then return 1 
         else return $ maximum c + 1
 
 listUser :: FilePath -> EitherT ParseError IO [User]
 listUser fp = do
-    f <- liftIO $ filter (\p -> p /= "." && p /= "..") `fmap` getDirectoryContents fp
+    f <- liftIO $ listDirectory fp
     mapM (readUser . ((fp ++ "/") ++)) f
  
 createUser :: FilePath -> T.Text -> IO User
 createUser fp n = do
-    i <- nextFreeUserId fp
+    i <- nextId fp
     let u = User n i
     writeUser (fp ++"/" ++ show i) u
     return u 
@@ -137,14 +153,19 @@ readIssue fp = do
     p <- lift $ readFile fp
     hoistEither $ parseIssue p
 
+readProject :: FilePath -> EitherT ParseError IO Project
+readProject fp = do
+    p <- lift $ readFile fp
+    hoistEither $ parseProject p
+
 -- Parser
 parseUser :: String -> Either ParseError User
 parseUser = parse userParser "Could not parse user"
 
 userParser :: GenParser Char st User
 userParser = do
-    n <- T.pack `fmap` preferenceParser "Name"
     i <- read `fmap` preferenceParser "ID"
+    n <- T.pack `fmap` preferenceParser "Name"
     return $ User n i
 
 parseIssue :: String -> Either ParseError Issue
@@ -177,6 +198,16 @@ issueParser = do
 	    Nothing --issueReproducibility :: Maybe Reproducibility 
 	    Nothing --issueResolution :: Maybe Resolution
 
+parseProject :: String -> Either ParseError Project
+parseProject = parse projectParser "Could not parse project"
+
+projectParser :: GenParser Char st Project
+projectParser = do
+    i <- read `fmap` preferenceParser "ID"
+    n <- T.pack `fmap` preferenceParser "Name"
+    is <- read `fmap` preferenceParser "Issues"
+    return $ Project n i is
+
 preferenceParser :: String -> GenParser Char st String
 preferenceParser p = do
     n <- string p
@@ -185,18 +216,28 @@ preferenceParser p = do
     char '\n'
     return m
 
--- Blaze
+-- blaze
 --
 
 instance B.ToMarkup Issue where
     toMarkup i = BH.html $ do
         BH.head $ do
-            BH.title "lantis issue tracker"
+            BH.title "lantis issues tracker"
         BH.body $ do
             BH.p $ BH.toMarkup $ "Issue number " ++ (show $ issueId i)
             BH.string $ "Status " ++ (show $ issueState i)
             BH.h1 $ BH.string (show $ issueSummary i)
             BH.string (show $ issueDescription i)
+
+instance B.ToMarkup Project where
+    toMarkup p = BH.html $ do
+        BH.head $ do
+            BH.title $ "lantis" 
+        BH.body $ do
+        BH.p $ (BH.toHtml) (projectName p)
+        BH.ul $ do
+            mapM_ (BH.i . BH.toHtml) (projectIssues p)
+
 -- Servant
 --
 
@@ -206,6 +247,9 @@ instance FromJSON User
 
 instance ToJSON Issue
 instance FromJSON Issue
+
+instance ToJSON Category
+instance FromJSON Category
 
 instance ToJSON Status
 instance FromJSON Status
@@ -233,6 +277,7 @@ type UserAPI = "user" :> Capture "id" UserId :> Get '[JSON] User
          :<|> "users" :> ReqBody '[JSON] User :> Post '[JSON] User
          :<|> "users" :> Get '[JSON] [User]
          :<|> "issue" :> Capture "id" IssueId :> Get '[HTML] Issue
+         :<|> "project" :> Capture "id" ProjectId :> Get '[HTML] Project
 
 myuser = User "Test 123" 15
 
@@ -245,7 +290,7 @@ server = (\x -> bimapEitherT (const err501) id $ readUser $ userDir ++ show x)
              return myuser)
     :<|> (\u -> lift $ do
                   putStrLn $ show u
-                  i <- nextFreeUserId userDir
+                  i <- nextId userDir
                   let u' = userChangeId u i
                   writeUser (userDir ++ show i) u'
                   return u')
@@ -253,6 +298,7 @@ server = (\x -> bimapEitherT (const err501) id $ readUser $ userDir ++ show x)
            liftIO $ putStrLn "Listing all users"
            bimapEitherT (const err501) id $ listUser userDir
    :<|> (\x -> bimapEitherT (const err501) id $ readIssue $ issueDir ++ show x)
+   :<|> (\x -> bimapEitherT (const err501) id $ readProject $ projectDir ++ show x)
 
 app :: Application
 app = serve userAPI server

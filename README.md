@@ -8,6 +8,10 @@
    2) Project
    3) Issue
 
+* Example project
+   * specify which states can be seen per project
+   * specify a project in order to test the GUI (3 states)
+
 # Rest API
 * Servant
    -> Write
