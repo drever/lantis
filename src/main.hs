@@ -236,7 +236,7 @@ instance B.ToMarkup Project where
         BH.body $ do
         BH.p $ (BH.toHtml) (projectName p)
         BH.ul $ do
-            mapM_ (BH.i . BH.toHtml) (projectIssues p)
+            mapM_ (BH.li . BH.toHtml) (projectIssues p)
 
 -- Servant
 --

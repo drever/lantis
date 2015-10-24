@@ -1,0 +1,96 @@
+<head>
+<title> lantis - projects - draft </title>
+
+<style>
+.column { border: 2px solid; width: 200; min-height: 500; position: relative; float: left; margin-left: 20 }
+.card { height: 100; overflow: overlay; border: 1px solid; margin-top: 5; margin-left: 5; margin-right: 5; margin-bottom: 5 }
+h1 { font-size: 14; font-weight: bold }
+h2 { font-size: 12 }
+body { font-size: 10; font-family: helvetica }
+</style>
+
+<script src="jquery-2.1.4.js"></script>
+
+<script>
+function drag(event){
+    event.dataTransfer.setData("source-card", event.target.id);
+}
+
+function allowDrag(event){
+    event.preventDefault();
+}
+
+function drop(event){
+    var sourceCard = event.dataTransfer.getData("source-card");
+    var targetColumn = $(event.target).closest('.column');
+
+    $('#' + sourceCard).appendTo(targetColumn);
+}
+</script>
+</head>
+
+<html>
+
+<h1> lantis</h1>
+
+<div id="content">
+
+<div id="new" class="column" draggable="true" ondragover="allowDrag(event)" ondrop="drop(event)">
+
+        <h1> new </h1>
+
+        <div id="i4021" class="card" draggable="true" ondragstart="drag(event)">
+               <h2> Integrate ReactJS </h2>
+               <ul>
+                       <li> #4021 </li>
+		       <li> Priority: Low </li>
+		       <li> Target Version: 0.0.2 </li>
+               </ul>
+        </div>
+
+        <div id="i4022" class="card" draggable="true" ondragstart="drag(event)">
+               <h2> Integrate blaze-react and understand everything about FRP</h2>
+               <ul>
+                       <li> #4022 </li>
+		       <li> Priority: Very Low </li>
+		       <li> Target Version: 10.0.2 </li>
+               </ul>
+        </div>
+</div>
+
+<div id="in-progress" class="column" ondragover="allowDrag(event)" ondrop="drop(event)">
+        <h1> in progress </h1>
+
+	<div id="i4019" class="card" draggable="true" ondragstart="drag(event)">
+		<h2> Prototype of a drag and drop interface </h2>
+		<ul>
+                   <li> #4019 </li>
+		   <li> Assigned to Johannes</li>
+		   <li> Priority: High </li>
+		   <li> Target Version: 0.0.1 </li> 
+		</ul>
+		<p>
+			Build a static prototype of the drag and drop interface with HTML. 
+		</p>
+	</div>
+</div>
+
+<div id="done" class="column" ondragover="allowDrag(event)" ondrop="drop(event)">
+        <h1> done </h1>
+
+	<div id="i3999" class="card" draggable="true" ondragstart="drag(event)">
+		<h2> Get the servant API running </h2>
+                <ul>
+                     <li> #3999 </li>
+                     <li> Assigned to Johannes </li>
+                     <li> Priority: High </li>
+                     <li> Target Version: 0.0.1 </li>
+                </ul>
+                <p>
+                     Build a REST service with servant.
+                </p> 
+	</div>
+	</div>
+</div>
+
+</html>
