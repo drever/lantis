@@ -1,0 +1,6 @@
+
+.column { border: 2px solid; width: 200; min-height: 500; position: relative; float: left; margin-left: 20 }
+.card { height: 100; overflow: overlay; border: 1px solid; margin-top: 5; margin-left: 5; margin-right: 5; margin-bottom: 5 }
+h1 { font-size: 14; font-weight: bold }
+h2 { font-size: 12 }
+body { font-size: 10; font-family: helvetica }

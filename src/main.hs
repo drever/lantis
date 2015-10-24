@@ -17,7 +17,8 @@ import Control.Monad.Trans
 
 import Text.ParserCombinators.Parsec
 import qualified Text.Blaze as B
-import qualified Text.Blaze.Html4.Strict as BH
+import qualified Text.Blaze.Html5 as BH
+import qualified Text.Blaze.Html5.Attributes as A
 
 import Data.Aeson
 import GHC.Generics
@@ -34,12 +35,13 @@ listDirectory fp = fmap (filter (\p -> p /= "." && p /= "..")) (getDirectoryCont
 -- 
 -- ADTs
 
-data Status = New | Feedback | Acknowledged | Confirmed | Assigned | Resovled | Closed deriving (Show, Read, Generic)
+data Status = InProgress | Done | New | Feedback | Acknowledged | Confirmed | Assigned | Resovled | Closed deriving (Show, Read, Generic, Eq)
 
 data Project = Project {
     projectName :: T.Text
   , projectId :: ProjectId
   , projectIssues :: [IssueId]
+  , projectStatus :: [Status]
 } deriving (Show)
 
 data User = User {
@@ -74,7 +76,7 @@ data Comment = Comment {
 } deriving (Show)
 
 data Issue = Issue {
-    issueState :: Status
+    issueStatus :: Status
   , issueSummary :: T.Text
   , issueDescription :: T.Text 
   , issueTags :: [T.Text]
@@ -99,6 +101,9 @@ data Issue = Issue {
 userDir = "data/user/"
 issueDir = "data/issue/"
 projectDir = "data/project/"
+
+jsDir = "webroot/js"
+cssDir = "webroot/css"
 
 -- | 
 -- Data manipulation
@@ -208,7 +213,8 @@ projectParser = do
     i <- read `fmap` preferenceParser "ID"
     n <- T.pack `fmap` preferenceParser "Name"
     is <- read `fmap` preferenceParser "Issues"
-    return $ Project n i is
+    ss <- read `fmap` preferenceParser "Status"
+    return $ Project n i is ss
 
 preferenceParser :: String -> GenParser Char st String
 preferenceParser p = do
@@ -223,11 +229,8 @@ preferenceParser p = do
 
 instance B.ToMarkup Issue where
     toMarkup i = BH.html $ do
-        BH.head $ do
-            BH.title "lantis issues tracker"
-        BH.body $ do
             BH.p $ BH.toMarkup $ "Issue number " ++ (show $ issueId i)
-            BH.string $ "Status " ++ (show $ issueState i)
+            BH.string $ "Status " ++ (show $ issueStatus i)
             BH.h1 $ BH.string (show $ issueSummary i)
             BH.string (show $ issueDescription i)
 
@@ -236,17 +239,31 @@ instance B.ToMarkup Project where
         BH.head $ do
             BH.title $ "lantis" 
         BH.body $ do
-        BH.p $ (BH.toHtml) (projectName p)
-        BH.ul $ do
+        BH.h1 $ (BH.toHtml) (projectName p)
+        BH.ul $ 
             mapM_ (BH.li . BH.toHtml) (projectIssues p)
+
+instance B.ToMarkup Status where
+    toMarkup = BH.toHtml . show
 
 instance B.ToMarkup (Project, [Issue]) where
     toMarkup (p, is) = BH.html $ do
         BH.head $ do
              BH.title $ "lantis"
-        BH.body $ (BH.toHtml) (projectName p)
-        BH.ul $ do
-            mapM_ (BH.li . BH.toHtml) is
+             BH.link BH.! A.rel "stylesheet" BH.! A.type_ "text/css" BH.! A.href "../css/lantis.css"
+             BH.script BH.! A.src "../js/lantis.js" $ ""
+             BH.script BH.! A.src "../js/jquery-2.1.4.js" $ "" 
+        BH.body $ BH.h1 $ (BH.toHtml) (projectName p)
+        mapM_ (column is) (projectStatus p)
+
+column :: [Issue] -> Status -> BH.Markup
+column is s = BH.div BH.! A.id (BH.toValue $ show s) BH.! A.class_ "column" BH.! A.draggable (BH.toValue True) BH.! A.ondragover "allowDrag(event)" BH.! A.ondrop "drop(event)" $ do
+    BH.toHtml s
+    mapM_ card (filter (\x -> issueStatus x == s) is)
+
+card :: Issue -> BH.Markup
+card i = BH.div BH.! A.id (BH.toValue (issueId i)) BH.! A.class_ "card" BH.! A.draggable (BH.toValue True) BH.! A.ondragstart "drag(event)" $
+    BH.toHtml i
 
 -- Servant
 --
@@ -288,6 +305,8 @@ type UserAPI = "user" :> Capture "id" UserId :> Get '[JSON] User
          :<|> "users" :> Get '[JSON] [User]
          :<|> "issue" :> Capture "id" IssueId :> Get '[HTML] Issue
          :<|> "project" :> Capture "id" ProjectId :> Get '[HTML] (Project, [Issue])
+         :<|> "js" :> Raw
+         :<|> "css" :> Raw
 
 myuser = User "Test 123" 15
 
@@ -313,6 +332,8 @@ server = (\x -> bimapEitherT (const err501) id $ readUser $ userDir ++ show x)
                  p <- readProject $ projectDir ++ (show x)
                  is <- mapM (\iid -> readIssue (issueDir ++ show iid)) (projectIssues p)
                  return (p, is)) 
+   :<|> serveDirectory jsDir
+   :<|> serveDirectory cssDir
 
 app :: Application
 app = serve userAPI server
