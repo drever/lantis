@@ -229,10 +229,10 @@ preferenceParser p = do
 
 instance B.ToMarkup Issue where
     toMarkup i = BH.html $ do
-            BH.p $ BH.toMarkup $ "Issue number " ++ (show $ issueId i)
-            BH.string $ "Status " ++ (show $ issueStatus i)
-            BH.h1 $ BH.string (show $ issueSummary i)
-            BH.string (show $ issueDescription i)
+            BH.h2 $ BH.string (T.unpack $ issueSummary i)
+            BH.ul $ do
+                BH.li $ BH.toMarkup $ "#" ++ (show $ issueId i)
+            BH.string (T.unpack $ issueDescription i)
 
 instance B.ToMarkup Project where
     toMarkup p = BH.html $ do
@@ -258,7 +258,7 @@ instance B.ToMarkup (Project, [Issue]) where
 
 column :: [Issue] -> Status -> BH.Markup
 column is s = BH.div BH.! A.id (BH.toValue $ show s) BH.! A.class_ "column" BH.! A.draggable (BH.toValue True) BH.! A.ondragover "allowDrag(event)" BH.! A.ondrop "drop(event)" $ do
-    BH.toHtml s
+    BH.h1 $ BH.toHtml s
     mapM_ card (filter (\x -> issueStatus x == s) is)
 
 card :: Issue -> BH.Markup
