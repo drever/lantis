@@ -254,7 +254,13 @@ instance B.ToMarkup (Project, [Issue]) where
              BH.script BH.! A.src "../js/lantis.js" $ ""
              BH.script BH.! A.src "../js/jquery-2.1.4.js" $ "" 
         BH.body $ BH.h1 $ (BH.toHtml) (projectName p)
+        controls
         mapM_ (column is) (projectStatus p)
+
+controls :: BH.Markup
+controls = do 
+    BH.div BH.! A.id "controls" $ do
+        BH.button "New issue"
 
 column :: [Issue] -> Status -> BH.Markup
 column is s = BH.div BH.! A.id (BH.toValue $ show s) BH.! A.class_ "column" BH.! A.draggable (BH.toValue True) BH.! A.ondragover "allowDrag(event)" BH.! A.ondrop "drop(event)" $ do
