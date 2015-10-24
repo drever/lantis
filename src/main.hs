@@ -5,6 +5,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeOperators #-}
 
+{-# LANGUAGE FlexibleInstances #-}
+
 import qualified Data.Text as T
 import Data.Time
 
@@ -238,6 +240,14 @@ instance B.ToMarkup Project where
         BH.ul $ do
             mapM_ (BH.li . BH.toHtml) (projectIssues p)
 
+instance B.ToMarkup (Project, [Issue]) where
+    toMarkup (p, is) = BH.html $ do
+        BH.head $ do
+             BH.title $ "lantis"
+        BH.body $ (BH.toHtml) (projectName p)
+        BH.ul $ do
+            mapM_ (BH.li . BH.toHtml) is
+
 -- Servant
 --
 
@@ -277,7 +287,7 @@ type UserAPI = "user" :> Capture "id" UserId :> Get '[JSON] User
          :<|> "users" :> ReqBody '[JSON] User :> Post '[JSON] User
          :<|> "users" :> Get '[JSON] [User]
          :<|> "issue" :> Capture "id" IssueId :> Get '[HTML] Issue
-         :<|> "project" :> Capture "id" ProjectId :> Get '[HTML] Project
+         :<|> "project" :> Capture "id" ProjectId :> Get '[HTML] (Project, [Issue])
 
 myuser = User "Test 123" 15
 
@@ -298,7 +308,11 @@ server = (\x -> bimapEitherT (const err501) id $ readUser $ userDir ++ show x)
            liftIO $ putStrLn "Listing all users"
            bimapEitherT (const err501) id $ listUser userDir
    :<|> (\x -> bimapEitherT (const err501) id $ readIssue $ issueDir ++ show x)
-   :<|> (\x -> bimapEitherT (const err501) id $ readProject $ projectDir ++ show x)
+   :<|> (\x -> bimapEitherT (const err501) id $ do 
+                 liftIO $ putStrLn $ show x
+                 p <- readProject $ projectDir ++ (show x)
+                 is <- mapM (\iid -> readIssue (issueDir ++ show iid)) (projectIssues p)
+                 return (p, is)) 
 
 app :: Application
 app = serve userAPI server
