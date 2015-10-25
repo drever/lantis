@@ -11,6 +11,7 @@ import qualified Data.Text as T
 import Data.Time
 
 import System.Directory
+import System.IO
 
 import Control.Monad.Trans.Either
 import Control.Monad.Trans
@@ -32,6 +33,12 @@ import Servant.HTML.Blaze
 listDirectory :: FilePath -> IO [FilePath]
 listDirectory fp = fmap (filter (\p -> p /= "." && p /= "..")) (getDirectoryContents  fp)
 
+guardedFileOp :: (FilePath -> IO b) -> FilePath -> EitherT String IO b
+guardedFileOp op fp = do
+    b <- liftIO $ doesFileExist fp
+    if b 
+        then liftIO $ op fp
+        else left $ "file not found: " ++ fp
 -- 
 -- ADTs
 
@@ -95,6 +102,27 @@ data Issue = Issue {
   , issueResolution :: Maybe Resolution
 } deriving (Show, Generic)
 
+emptyIssue :: IssueId -> ProjectId -> Issue
+emptyIssue i p =
+        Issue
+	    New -- status
+	    "empty" --summary 
+	    "empty" --description
+	    [] -- tags
+	    [] -- relationships
+	    i -- issueId 
+	    p -- issueProject :: ProjectId
+	    Nothing -- issueCategory :: Maybe Category 
+	    (UTCTime (fromGregorian 1970 0 0) 0)--issueDateSubmitted :: UTCTime
+	    (UTCTime (fromGregorian 1970 0 0) 0)--issueLastUpdate :: UTCTime
+	    0 --issueReporter :: UserId
+	    Public --issueViewStatus :: ViewStatus
+	    Nothing --issueAssignedTo :: Maybe User
+	    Nothing --issueSeverity :: Maybe Severity
+	    Nothing --issuePriority :: Maybe Priority
+	    Nothing --issueReproducibility :: Maybe Reproducibility 
+	    Nothing --issueResolution :: Maybe Resolution
+
 -- | Environment
 --
 
@@ -108,8 +136,11 @@ cssDir = "webroot/css"
 -- | 
 -- Data manipulation
 
-userChangeId :: User -> Int -> User
-userChangeId (User n i) i' = User n i'
+changeId :: User -> Int -> User
+changeId (User n i) i' = User n i'
+
+addIssue :: Issue -> Project -> Project
+addIssue i (Project n pi is ss) = Project n pi ((issueId i):is) ss
 
 -- |
 -- IO
@@ -121,20 +152,31 @@ readData parser fp = do
     p <- lift $ readFile fp
     hoistEither $ parser p 
 
-readUser :: FilePath -> EitherT ParseError IO User
-readUser = readData parseUser
-    
+readUser :: FilePath -> UserId -> EitherT ParseError IO User
+readUser fp ui = readData parseUser (fp ++ "/" ++ show ui)
+
+pappend :: String -> T.Text -> (T.Text -> T.Text)
+pappend k v = T.append (T.pack k `T.append` " " `T.append` v `T.append` "\n")
 
 writeUser :: FilePath -> User -> IO ()
 writeUser fp p = writeFile fp $ T.unpack $  
-    "ID " `T.append` T.pack (show $ userId p) `T.append` "\n" `T.append`
-    "Name " `T.append` userName p `T.append` "\n"
+    pappend "ID" (T.pack $ show $ userId p) $
+    pappend "Name" (userName p) $ ""
 
-writeProject :: FilePath -> Project -> IO ()
-writeProject fp p = writeFile fp $ T.unpack $
-    "ID " `T.append` T.pack (show $ projectId p) `T.append` "\n" `T.append`
-    "Name " `T.append` projectName p `T.append` "\n" `T.append`
-    "Issues " `T.append` T.pack (show $ projectIssues p) `T.append` "\n"
+renderProject :: Project -> T.Text
+renderProject p = 
+    pappend "ID" (T.pack $ show $ projectId p) $
+    pappend "Name" (projectName p) $
+    pappend "Issues" (T.pack $ show $ projectIssues p) $ 
+    pappend "Status" (T.pack $ show $ projectStatus p) $ ""
+
+renderIssue :: Issue -> T.Text
+renderIssue i = 
+    pappend "ID" (T.pack $ show $ issueId i) $
+    pappend "Project" (T.pack $ show $ issueProject i) $
+    pappend "Status" (T.pack $ show $ issueStatus i) $
+    pappend "Summary" (issueSummary i) $
+    pappend "Description" (issueDescription i) $ ""
 
 nextId :: FilePath -> IO Int
 nextId fp = do
@@ -146,7 +188,7 @@ nextId fp = do
 listUser :: FilePath -> EitherT ParseError IO [User]
 listUser fp = do
     f <- liftIO $ listDirectory fp
-    mapM (readUser . ((fp ++ "/") ++)) f
+    mapM (readUser fp) (map read f)
  
 createUser :: FilePath -> T.Text -> IO User
 createUser fp n = do
@@ -155,14 +197,27 @@ createUser fp n = do
     writeUser (fp ++"/" ++ show i) u
     return u 
 
-readIssue :: FilePath -> EitherT ParseError IO Issue
-readIssue fp = do
-    p <- lift $ readFile fp
+createIssue :: FilePath -> FilePath -> ProjectId -> EitherT String IO Issue
+createIssue ip pp pi = do
+    projectH <- guardedFileOp (flip openFile ReadMode) (pp ++ "/" ++ show pi)
+    p <- liftIO $ hGetContents projectH
+    let parsedProject = hoistEither $ parseProject p
+    proj <- bimapEitherT show id $ parsedProject
+    liftIO $ hClose projectH
+    i <- liftIO $ nextId ip
+    let newIssue = emptyIssue i (projectId proj)
+    liftIO $ writeFile (ip ++ "/" ++ show i) (T.unpack $ renderIssue newIssue)
+    liftIO $ writeFile (pp ++ "/" ++ show (projectId proj)) (T.unpack $ renderProject (addIssue newIssue proj))
+    return newIssue
+
+readIssue :: FilePath -> IssueId -> EitherT ParseError IO Issue
+readIssue fp ii = do
+    p <- lift $ readFile (fp ++ "/" ++ show ii)
     hoistEither $ parseIssue p
 
-readProject :: FilePath -> EitherT ParseError IO Project
-readProject fp = do
-    p <- lift $ readFile fp
+readProject :: FilePath -> ProjectId -> EitherT ParseError IO Project
+readProject fp pi = do
+    p <- lift $ readFile (fp ++ "/" ++ show pi)
     hoistEither $ parseProject p
 
 -- Parser
@@ -308,6 +363,7 @@ instance ToJSON ViewStatus
 type UserAPI = "user" :> Capture "id" UserId :> Get '[JSON] User
          :<|> "myuser" :> Get '[JSON] User
          :<|> "users" :> ReqBody '[JSON] User :> Post '[JSON] User
+--         :<|> "issue" :> ReqBody '[JSON] Issue :> Post '[HTML] Issue
          :<|> "users" :> Get '[JSON] [User]
          :<|> "issue" :> Capture "id" IssueId :> Get '[HTML] Issue
          :<|> "project" :> Capture "id" ProjectId :> Get '[HTML] (Project, [Issue])
@@ -319,24 +375,24 @@ myuser = User "Test 123" 15
 userAPI :: Proxy UserAPI
 userAPI = Proxy
 
-server = (\x -> bimapEitherT (const err501) id $ readUser $ userDir ++ show x)
+server = (\x -> bimapEitherT (const err501) id $ readUser userDir x)
     :<|> (do
              liftIO $ putStrLn "Test"
              return myuser)
     :<|> (\u -> lift $ do
                   putStrLn $ show u
                   i <- nextId userDir
-                  let u' = userChangeId u i
+                  let u' = changeId u i
                   writeUser (userDir ++ show i) u'
                   return u')
    :<|> do
            liftIO $ putStrLn "Listing all users"
            bimapEitherT (const err501) id $ listUser userDir
-   :<|> (\x -> bimapEitherT (const err501) id $ readIssue $ issueDir ++ show x)
+   :<|> (\x -> bimapEitherT (const err501) id $ readIssue issueDir x)
    :<|> (\x -> bimapEitherT (const err501) id $ do 
                  liftIO $ putStrLn $ show x
-                 p <- readProject $ projectDir ++ (show x)
-                 is <- mapM (\iid -> readIssue (issueDir ++ show iid)) (projectIssues p)
+                 p <- readProject projectDir x
+                 is <- mapM (\iid -> readIssue issueDir iid) (projectIssues p)
                  return (p, is)) 
    :<|> serveDirectory jsDir
    :<|> serveDirectory cssDir
