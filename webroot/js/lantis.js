@@ -1,15 +1,26 @@
+(function (lantis, $, undefined) {
+	lantis.createIssue = function (projectId){
+	    $.ajax({
+		url: "../newissue/" + projectId,
+		method: 'POST'
+	    })
+	     .done(function(data) {
+                 $('#New').append(data);
+	    });
+	}
 
-function drag(event){
-    event.dataTransfer.setData("source-card", event.target.id);
-}
+	lantis.drag = function(event){
+	    event.dataTransfer.setData("source-card", event.target.id);
+	}
 
-function allowDrag(event){
-    event.preventDefault();
-}
+	lantis.allowDrag = function (event){
+	    event.preventDefault();
+	}
 
-function drop(event){
-    var sourceCard = event.dataTransfer.getData("source-card");
-    var targetColumn = $(event.target).closest('.column');
+	lantis.drop = function (event){
+	    var sourceCard = event.dataTransfer.getData("source-card");
+	    var targetColumn = $(event.target).closest('.column');
 
-    $('#' + sourceCard).appendTo(targetColumn);
-}
+	    $('#' + sourceCard).appendTo(targetColumn);
+	}
+}(window.lantis = window.lantis || {}, jQuery));
