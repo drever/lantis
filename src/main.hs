@@ -8,6 +8,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 import qualified Data.Text as T
+import qualified Data.ByteString.Lazy as BS
 import Data.Time
 
 import System.Directory
@@ -15,6 +16,7 @@ import System.IO
 
 import Control.Monad.Trans.Either
 import Control.Monad.Trans
+import Control.Monad
 
 import Text.ParserCombinators.Parsec
 import qualified Text.Blaze as B
@@ -140,12 +142,18 @@ changeId :: User -> Int -> User
 changeId (User n i) i' = User n i'
 
 addIssue :: Issue -> Project -> Project
-addIssue i (Project n pi is ss) = Project n pi ((issueId i):is) ss
+addIssue i p = p { projectIssues = ((issueId i):projectIssues p) }
+
+removeIssue :: IssueId -> Project -> Project
+removeIssue i p = p { projectIssues = filter (/=i) (projectIssues p) }
 
 -- |
 -- IO
 
 type GeneralError = String
+
+convertError :: GeneralError -> ServantErr
+convertError e = ServantErr 103 e BS.empty []
 
 readData :: (String -> Either ParseError a) -> FilePath -> EitherT ParseError IO a
 readData parser fp = do
@@ -210,16 +218,43 @@ createIssue ip pp pi = do
     liftIO $ writeFile (pp ++ "/" ++ show (projectId proj)) (T.unpack $ renderProject (addIssue newIssue proj))
     return newIssue
 
-readIssue :: FilePath -> IssueId -> EitherT ParseError IO Issue
+deleteIssue :: FilePath -> FilePath -> IssueId -> EitherT String IO IssueId
+deleteIssue ip pp i = do
+    liftIO $ removeFile $ ip'
+    pid <- projectIdForIssue pp i
+    p <- readProject pp pid    
+    liftIO $ writeFile (pp ++ "/" ++ show pid) (T.unpack $ renderProject $ removeIssue i p) 
+    return i
+    where ip' = ip ++ show i
+  
+projectIdForIssue :: FilePath -> IssueId -> EitherT GeneralError IO ProjectId
+projectIdForIssue fp i = do
+    ps <- liftIO $ listDirectory fp
+    let pids = filterM (\pf -> do  
+                   p <- readProject fp (read pf) 
+		   return $ i `elem` (projectIssues p)) ps
+    l <- length `fmap` pids
+    if l > 0
+        then fmap (read . head) pids
+        else left $ "Invalid issue. An issue has to belong to exactly one project. This issue is orphaned." ++ show i
+
+readIssue :: FilePath -> IssueId -> EitherT GeneralError IO Issue
 readIssue fp ii = do
-    p <- lift $ readFile (fp ++ "/" ++ show ii)
-    hoistEither $ parseIssue p
+    b <- liftIO $ doesFileExist (fp ++ "/" ++ show ii)
+    if b
+        then do p <- lift $ readFile (fp ++ "/" ++ show ii)
+		bimapEitherT show id $ hoistEither $ parseIssue p
+        else left $ "File not found for issue id " ++ show ii
 
-readProject :: FilePath -> ProjectId -> EitherT ParseError IO Project
+readProject :: FilePath -> ProjectId -> EitherT GeneralError IO Project
 readProject fp pi = do
-    p <- lift $ readFile (fp ++ "/" ++ show pi)
-    hoistEither $ parseProject p
-
+    projectH <- guardedFileOp (flip openFile ReadMode) (fp ++ "/" ++ show pi)
+    p <- liftIO $ hGetContents projectH
+    let parsedProject = hoistEither $ parseProject p
+    proj <- bimapEitherT show id $ parsedProject
+    liftIO $ hClose projectH
+    return proj   
+ 
 -- Parser
 parseUser :: String -> Either ParseError User
 parseUser = parse userParser "Could not parse user"
@@ -311,8 +346,8 @@ instance B.ToMarkup (Project, [Issue]) where
 
 controls :: BH.Markup
 controls = do 
-    BH.div BH.! A.id "controls" BH.! A.onclick "lantis.createIssue(lantis.projectId)" $ do
-        BH.button "New issue"
+    BH.div BH.! A.id "controls" $ do
+        BH.button BH.! A.onclick "lantis.createIssue(lantis.projectId)" $ "New issue"
 
 column :: [Issue] -> Status -> BH.Markup
 column is s = BH.div BH.! A.id (BH.toValue $ show s) BH.! A.class_ "column" BH.! A.draggable (BH.toValue True) BH.! A.ondragover "lantis.allowDrag(event)" BH.! A.ondrop "lantis.drop(event)" $ do
@@ -320,8 +355,9 @@ column is s = BH.div BH.! A.id (BH.toValue $ show s) BH.! A.class_ "column" BH.!
     mapM_ card (filter (\x -> issueStatus x == s) is)
 
 card :: Issue -> BH.Markup
-card i = BH.div BH.! A.id (BH.toValue (issueId i)) BH.! A.class_ "card" BH.! A.draggable (BH.toValue True) BH.! A.ondragstart "lantis.drag(event)" $
+card i = BH.div BH.! A.id (BH.toValue ("issue" ++ (show $ issueId i))) BH.! A.class_ "card" BH.! A.draggable (BH.toValue True) BH.! A.ondragstart "lantis.drag(event)" $
     BH.toHtml $ BH.html $ do
+      BH.button BH.! A.onclick (BH.toValue $ "lantis.deleteIssue(" ++ (show $ issueId i) ++ ")") $ "Delete issue"
       BH.h2 $ BH.string (T.unpack $ issueSummary i)
       BH.ul $ do
                BH.li $ BH.toMarkup $ "#" ++ (show $ issueId i)
@@ -361,43 +397,47 @@ instance ToJSON Relationship
 instance FromJSON ViewStatus
 instance ToJSON ViewStatus
 
-type UserAPI = "user" :> Capture "id" UserId :> Get '[JSON] User
-         :<|> "myuser" :> Get '[JSON] User
-         :<|> "users" :> ReqBody '[JSON] User :> Post '[JSON] User
-         :<|> "newissue" :> Capture "id" ProjectId :> Post '[HTML] Issue
+type UserAPI = "users" :> ReqBody '[JSON] User :> Post '[JSON] User
+         :<|> "createIssue" :> Capture "id" ProjectId :> Post '[HTML] Issue
+         :<|> "deleteIssue" :> Capture "id" IssueId :> Post '[JSON] IssueId
          :<|> "users" :> Get '[JSON] [User]
          :<|> "issue" :> Capture "id" IssueId :> Get '[HTML] Issue
          :<|> "project" :> Capture "id" ProjectId :> Get '[HTML] (Project, [Issue])
          :<|> "js" :> Raw
          :<|> "css" :> Raw
 
-myuser = User "Test 123" 15
-
 userAPI :: Proxy UserAPI
 userAPI = Proxy
 
-server = (\x -> bimapEitherT (const err501) id $ readUser userDir x)
-    :<|> (do
-             liftIO $ putStrLn "Test"
-             return myuser)
-    :<|> (\u -> lift $ do
+server = createUserR 
+   :<|> createIssueR 
+   :<|> deleteIssueR 
+   :<|> usersR
+   :<|> issueR 
+   :<|> projectR 
+   :<|> serveDirectory jsDir
+   :<|> serveDirectory cssDir
+
+createUserR u = lift $ do
                   putStrLn $ show u
                   i <- nextId userDir
                   let u' = changeId u i
                   writeUser (userDir ++ show i) u'
-                  return u')
-   :<|> (\p -> bimapEitherT (const err501) id $ createIssue "data/issue" "data/project" p) 
-   :<|> do
-           liftIO $ putStrLn "Listing all users"
-           bimapEitherT (const err501) id $ listUser userDir
-   :<|> (\x -> bimapEitherT (const err501) id $ readIssue issueDir x)
-   :<|> (\x -> bimapEitherT (const err501) id $ do 
-                 liftIO $ putStrLn $ show x
+                  return u'
+
+createIssueR p = bimapEitherT convertError id $ createIssue issueDir projectDir p
+deleteIssueR p = bimapEitherT convertError id $ deleteIssue issueDir projectDir p
+
+projectR x = bimapEitherT convertError id $ do 
                  p <- readProject projectDir x
                  is <- mapM (\iid -> readIssue issueDir iid) (projectIssues p)
-                 return (p, is)) 
-   :<|> serveDirectory jsDir
-   :<|> serveDirectory cssDir
+                 return (p, is)
+
+issueR x = bimapEitherT (const err500) id $ readIssue issueDir x
+
+usersR = do
+           liftIO $ putStrLn "Listing all users"
+           bimapEitherT (const err500) id $ listUser userDir
 
 app :: Application
 app = serve userAPI server

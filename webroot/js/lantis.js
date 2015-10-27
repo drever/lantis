@@ -1,13 +1,23 @@
 (function (lantis, $, undefined) {
 	lantis.createIssue = function (projectId){
 	    $.ajax({
-		url: "../newissue/" + projectId,
+		url: "../createIssue/" + projectId,
 		method: 'POST'
 	    })
 	     .done(function(data) {
                  $('#New').append(data);
 	    });
 	}
+
+        lantis.deleteIssue = function (issueId){
+            $.ajax({
+                url: "../deleteIssue/" + issueId,
+                method: 'POST'
+            })
+             .done(function(data) {
+                 $('#issue' + data).remove();
+            });
+        }
 
 	lantis.drag = function(event){
 	    event.dataTransfer.setData("source-card", event.target.id);

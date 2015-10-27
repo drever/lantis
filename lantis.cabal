@@ -22,6 +22,7 @@ Executable lantis
                 , mtl
                 , parsec
                 , directory
+                , bytestring
   Main-Is:        main.hs
   Hs-Source-Dirs: src
 
