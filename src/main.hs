@@ -41,10 +41,22 @@ guardedFileOp op fp = do
     if b 
         then liftIO $ op fp
         else left $ "file not found: " ++ fp
+
+throwServantErr = bimapEitherT convertError id
+
 -- 
 -- ADTs
 
-data Status = InProgress | Done | New | Feedback | Acknowledged | Confirmed | Assigned | Resovled | Closed deriving (Show, Read, Generic, Eq)
+data Status =
+      InProgress
+    | Done
+    | New
+    | Feedback
+    | Acknowledged
+    | Confirmed
+    | Assigned
+    | Resovled
+    | Closed deriving (Show, Read, Generic, Eq)
 
 data Project = Project {
     projectName :: T.Text
@@ -246,6 +258,18 @@ readIssue fp ii = do
 		bimapEitherT show id $ hoistEither $ parseIssue p
         else left $ "File not found for issue id " ++ show ii
 
+setIssueStatus :: FilePath -> IssueId -> Status -> EitherT GeneralError IO Issue
+setIssueStatus fp i s = do
+    h <- guardedFileOp (flip openFile ReadMode) isf
+    issue <- liftIO $ hGetContents h
+    parsedIssue <- (cid s) `fmap` (hoistEither $ parseIssue issue)
+    liftIO $ hClose h
+    liftIO $ writeFile isf (T.unpack $ renderIssue parsedIssue)
+    return parsedIssue
+    where cid :: Status -> Issue -> Issue
+          cid s i = i { issueStatus = s }
+          isf = (fp ++ "/" ++ show i)
+
 readProject :: FilePath -> ProjectId -> EitherT GeneralError IO Project
 readProject fp pi = do
     projectH <- guardedFileOp (flip openFile ReadMode) (fp ++ "/" ++ show pi)
@@ -265,8 +289,12 @@ userParser = do
     n <- T.pack `fmap` preferenceParser "Name"
     return $ User n i
 
-parseIssue :: String -> Either ParseError Issue
-parseIssue = parse issueParser "Could not parse issue"
+parseIssue :: String -> Either GeneralError Issue
+parseIssue = rethrow . parse issueParser "Could not parse issue"
+
+rethrow :: Either ParseError a -> Either GeneralError a
+rethrow (Left e) = Left $ show e
+rethrow (Right x) = (Right x)
 
 issueParser :: GenParser Char st Issue
 issueParser = do
@@ -366,6 +394,8 @@ card i = BH.div BH.! A.id (BH.toValue ("issue" ++ (show $ issueId i))) BH.! A.cl
 -- Servant
 --
 
+instance FromText Status where
+    fromText = Just . read . T.unpack
 
 instance ToJSON User
 instance FromJSON User
@@ -403,6 +433,7 @@ type UserAPI = "users" :> ReqBody '[JSON] User :> Post '[JSON] User
          :<|> "users" :> Get '[JSON] [User]
          :<|> "issue" :> Capture "id" IssueId :> Get '[HTML] Issue
          :<|> "project" :> Capture "id" ProjectId :> Get '[HTML] (Project, [Issue])
+         :<|> "setIssueStatus" :> Capture "id" IssueId :> QueryParam "status" Status :> Post '[HTML] Issue
          :<|> "js" :> Raw
          :<|> "css" :> Raw
 
@@ -415,6 +446,7 @@ server = createUserR
    :<|> usersR
    :<|> issueR 
    :<|> projectR 
+   :<|> setIssueStatusR
    :<|> serveDirectory jsDir
    :<|> serveDirectory cssDir
 
@@ -425,13 +457,19 @@ createUserR u = lift $ do
                   writeUser (userDir ++ show i) u'
                   return u'
 
-createIssueR p = bimapEitherT convertError id $ createIssue issueDir projectDir p
-deleteIssueR p = bimapEitherT convertError id $ deleteIssue issueDir projectDir p
+createIssueR p = throwServantErr $ createIssue issueDir projectDir p
+deleteIssueR p = throwServantErr $ deleteIssue issueDir projectDir p
 
-projectR x = bimapEitherT convertError id $ do 
+projectR x = throwServantErr $ do 
                  p <- readProject projectDir x
                  is <- mapM (\iid -> readIssue issueDir iid) (projectIssues p)
                  return (p, is)
+
+setIssueStatusR :: IssueId -> Maybe Status -> EitherT ServantErr IO Issue
+setIssueStatusR i (Just s) = throwServantErr $ do
+    liftIO $ putStrLn ("Setting issue status of issue " ++ show i ++ " to " ++ show s)
+    setIssueStatus issueDir i s
+setIssueStatusR _ Nothing = left $ err500
 
 issueR x = bimapEitherT (const err500) id $ readIssue issueDir x
 

@@ -31,6 +31,14 @@
 	    var sourceCard = event.dataTransfer.getData("source-card");
 	    var targetColumn = $(event.target).closest('.column');
 
-	    $('#' + sourceCard).appendTo(targetColumn);
+            var issueId = sourceCard.split("issue")[1];
+            var newStatus = $(targetColumn).prop('id');
+            $.ajax({
+                 url: "../setIssueStatus/" + issueId + "?status=" + newStatus,
+                 method: 'POST'
+            })
+             .done(function (data) {
+                 $('#' + sourceCard).appendTo(targetColumn);
+            }); 
 	}
 }(window.lantis = window.lantis || {}, jQuery));
