@@ -147,6 +147,8 @@ projectDir = "data/project/"
 jsDir = "webroot/js"
 cssDir = "webroot/css"
 
+imgDir = "webroot/img"
+
 -- | 
 -- Data manipulation
 
@@ -368,7 +370,8 @@ instance B.ToMarkup (Project, [Issue]) where
              BH.script BH.! A.src "../js/jquery-2.1.4.js" $ "" 
              BH.script BH.! A.src "../js/lantis.js" $ ""
              BH.script $ BH.toHtml $ "lantis.projectId = " ++ (show $ projectId p)
-        BH.body $ BH.h1 $ (BH.toHtml) (projectName p)
+        BH.body $ BH.img BH.! A.src "../img/lantis.png"
+        BH.h1 $ (BH.toHtml) (projectName p)
         controls
         mapM_ (column is) (projectStatus p)
 
@@ -436,6 +439,7 @@ type UserAPI = "users" :> ReqBody '[JSON] User :> Post '[JSON] User
          :<|> "setIssueStatus" :> Capture "id" IssueId :> QueryParam "status" Status :> Post '[HTML] Issue
          :<|> "js" :> Raw
          :<|> "css" :> Raw
+         :<|> "img" :> Raw
 
 userAPI :: Proxy UserAPI
 userAPI = Proxy
@@ -449,6 +453,7 @@ server = createUserR
    :<|> setIssueStatusR
    :<|> serveDirectory jsDir
    :<|> serveDirectory cssDir
+   :<|> serveDirectory imgDir
 
 createUserR u = lift $ do
                   putStrLn $ show u
