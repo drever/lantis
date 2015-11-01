@@ -153,10 +153,10 @@ imgDir = "webroot/img"
 -- Data manipulation
 
 changeId :: User -> Int -> User
-changeId (User n i) i' = User n i'
+changeId (User n i) = User n
 
 addIssue :: Issue -> Project -> Project
-addIssue i p = p { projectIssues = ((issueId i):projectIssues p) }
+addIssue i p = p { projectIssues = issueId i:projectIssues p }
 
 removeIssue :: IssueId -> Project -> Project
 removeIssue i p = p { projectIssues = filter (/=i) (projectIssues p) }
@@ -177,20 +177,20 @@ readData parser fp = do
 readUser :: FilePath -> UserId -> EitherT ParseError IO User
 readUser fp ui = readData parseUser (fp ++ "/" ++ show ui)
 
-pappend :: String -> T.Text -> (T.Text -> T.Text)
+pappend :: String -> T.Text -> T.Text -> T.Text
 pappend k v = T.append (T.pack k `T.append` " " `T.append` v `T.append` "\n")
 
 writeUser :: FilePath -> User -> IO ()
 writeUser fp p = writeFile fp $ T.unpack $  
     pappend "ID" (T.pack $ show $ userId p) $
-    pappend "Name" (userName p) $ ""
+    pappend "Name" (userName p) ""
 
 renderProject :: Project -> T.Text
 renderProject p = 
     pappend "ID" (T.pack $ show $ projectId p) $
     pappend "Name" (projectName p) $
     pappend "Issues" (T.pack $ show $ projectIssues p) $ 
-    pappend "Status" (T.pack $ show $ projectStatus p) $ ""
+    pappend "Status" (T.pack $ show $ projectStatus p) ""
 
 renderIssue :: Issue -> T.Text
 renderIssue i = 
@@ -198,11 +198,11 @@ renderIssue i =
     pappend "Project" (T.pack $ show $ issueProject i) $
     pappend "Status" (T.pack $ show $ issueStatus i) $
     pappend "Summary" (issueSummary i) $
-    pappend "Description" (issueDescription i) $ ""
+    pappend "Description" (issueDescription i) ""
 
 nextId :: FilePath -> IO Int
 nextId fp = do
-    c <- (map read) `fmap` (listDirectory fp)
+    c <- map read `fmap` listDirectory fp
     if null c 
         then return 1 
         else return $ maximum c + 1
@@ -210,7 +210,7 @@ nextId fp = do
 listUser :: FilePath -> EitherT ParseError IO [User]
 listUser fp = do
     f <- liftIO $ listDirectory fp
-    mapM (readUser fp) (map read f)
+    mapM (readUser fp . read) f
  
 createUser :: FilePath -> T.Text -> IO User
 createUser fp n = do
@@ -221,10 +221,10 @@ createUser fp n = do
 
 createIssue :: FilePath -> FilePath -> ProjectId -> EitherT String IO Issue
 createIssue ip pp pi = do
-    projectH <- guardedFileOp (flip openFile ReadMode) (pp ++ "/" ++ show pi)
+    projectH <- guardedFileOp (`openFile` ReadMode) (pp ++ "/" ++ show pi)
     p <- liftIO $ hGetContents projectH
     let parsedProject = hoistEither $ parseProject p
-    proj <- bimapEitherT show id $ parsedProject
+    proj <- bimapEitherT show id parsedProject
     liftIO $ hClose projectH
     i <- liftIO $ nextId ip
     let newIssue = emptyIssue i (projectId proj)
@@ -234,7 +234,7 @@ createIssue ip pp pi = do
 
 deleteIssue :: FilePath -> FilePath -> IssueId -> EitherT String IO IssueId
 deleteIssue ip pp i = do
-    liftIO $ removeFile $ ip'
+    liftIO $ removeFile ip'
     pid <- projectIdForIssue pp i
     p <- readProject pp pid    
     liftIO $ writeFile (pp ++ "/" ++ show pid) (T.unpack $ renderProject $ removeIssue i p) 
@@ -246,7 +246,7 @@ projectIdForIssue fp i = do
     ps <- liftIO $ listDirectory fp
     let pids = filterM (\pf -> do  
                    p <- readProject fp (read pf) 
-		   return $ i `elem` (projectIssues p)) ps
+		   return $ i `elem` projectIssues p) ps
     l <- length `fmap` pids
     if l > 0
         then fmap (read . head) pids
@@ -262,22 +262,22 @@ readIssue fp ii = do
 
 setIssueStatus :: FilePath -> IssueId -> Status -> EitherT GeneralError IO Issue
 setIssueStatus fp i s = do
-    h <- guardedFileOp (flip openFile ReadMode) isf
+    h <- guardedFileOp (`openFile` ReadMode) isf
     issue <- liftIO $ hGetContents h
-    parsedIssue <- (cid s) `fmap` (hoistEither $ parseIssue issue)
+    parsedIssue <- cid s `fmap` hoistEither (parseIssue issue)
     liftIO $ hClose h
     liftIO $ writeFile isf (T.unpack $ renderIssue parsedIssue)
     return parsedIssue
     where cid :: Status -> Issue -> Issue
           cid s i = i { issueStatus = s }
-          isf = (fp ++ "/" ++ show i)
+          isf = fp ++ "/" ++ show i
 
 readProject :: FilePath -> ProjectId -> EitherT GeneralError IO Project
 readProject fp pi = do
-    projectH <- guardedFileOp (flip openFile ReadMode) (fp ++ "/" ++ show pi)
+    projectH <- guardedFileOp (`openFile` ReadMode) (fp ++ "/" ++ show pi)
     p <- liftIO $ hGetContents projectH
     let parsedProject = hoistEither $ parseProject p
-    proj <- bimapEitherT show id $ parsedProject
+    proj <- bimapEitherT show id parsedProject
     liftIO $ hClose projectH
     return proj   
  
@@ -296,7 +296,7 @@ parseIssue = rethrow . parse issueParser "Could not parse issue"
 
 rethrow :: Either ParseError a -> Either GeneralError a
 rethrow (Left e) = Left $ show e
-rethrow (Right x) = (Right x)
+rethrow (Right x) = Right x
 
 issueParser :: GenParser Char st Issue
 issueParser = do
@@ -352,10 +352,10 @@ instance B.ToMarkup Issue where
 
 instance B.ToMarkup Project where
     toMarkup p = BH.html $ do
-        BH.head $ do
-            BH.title $ "lantis" 
+        BH.head $
+            BH.title "lantis" 
         BH.body $ do
-        BH.h1 $ (BH.toHtml) (projectName p)
+        BH.h1 $ BH.toHtml (projectName p)
         BH.ul $ 
             mapM_ (BH.li . BH.toHtml) (projectIssues p)
 
@@ -365,19 +365,19 @@ instance B.ToMarkup Status where
 instance B.ToMarkup (Project, [Issue]) where
     toMarkup (p, is) = BH.html $ do
         BH.head $ do
-             BH.title $ "lantis"
+             BH.title "lantis"
              BH.link BH.! A.rel "stylesheet" BH.! A.type_ "text/css" BH.! A.href "../css/lantis.css"
              BH.script BH.! A.src "../js/jquery-2.1.4.js" $ "" 
              BH.script BH.! A.src "../js/lantis.js" $ ""
-             BH.script $ BH.toHtml $ "lantis.projectId = " ++ (show $ projectId p)
+             BH.script $ BH.toHtml $ "lantis.projectId = " ++ show (projectId p)
         BH.body $ BH.img BH.! A.src "../img/lantis.png"
-        BH.h1 $ (BH.toHtml) (projectName p)
+        BH.h1 $ BH.toHtml (projectName p)
         controls
         mapM_ (column is) (projectStatus p)
 
 controls :: BH.Markup
-controls = do 
-    BH.div BH.! A.id "controls" $ do
+controls = 
+    BH.div BH.! A.id "controls" $ 
         BH.button BH.! A.onclick "lantis.createIssue(lantis.projectId)" $ "New issue"
 
 column :: [Issue] -> Status -> BH.Markup
@@ -386,12 +386,12 @@ column is s = BH.div BH.! A.id (BH.toValue $ show s) BH.! A.class_ "column" BH.!
     mapM_ card (filter (\x -> issueStatus x == s) is)
 
 card :: Issue -> BH.Markup
-card i = BH.div BH.! A.id (BH.toValue ("issue" ++ (show $ issueId i))) BH.! A.class_ "card" BH.! A.draggable (BH.toValue True) BH.! A.ondragstart "lantis.drag(event)" $
+card i = BH.div BH.! A.id (BH.toValue ("issue" ++ show (issueId i))) BH.! A.class_ "card" BH.! A.draggable (BH.toValue True) BH.! A.ondragstart "lantis.drag(event)" $
     BH.toHtml $ BH.html $ do
-      BH.button BH.! A.onclick (BH.toValue $ "lantis.deleteIssue(" ++ (show $ issueId i) ++ ")") $ "Delete issue"
+      BH.button BH.! A.class_ "deleteButton" BH.! A.onclick  (BH.toValue $ "lantis.deleteIssue(" ++ show (issueId i) ++ ")") $ "Delete issue"
       BH.h2 $ BH.string (T.unpack $ issueSummary i)
-      BH.ul $ do
-               BH.li $ BH.toMarkup $ "#" ++ (show $ issueId i)
+      BH.ul $ 
+               BH.li $ BH.toMarkup $ "#" ++ show (issueId i)
       BH.string (T.unpack $ issueDescription i)
 
 -- Servant
@@ -456,7 +456,7 @@ server = createUserR
    :<|> serveDirectory imgDir
 
 createUserR u = lift $ do
-                  putStrLn $ show u
+                  print u
                   i <- nextId userDir
                   let u' = changeId u i
                   writeUser (userDir ++ show i) u'
@@ -467,14 +467,14 @@ deleteIssueR p = throwServantErr $ deleteIssue issueDir projectDir p
 
 projectR x = throwServantErr $ do 
                  p <- readProject projectDir x
-                 is <- mapM (\iid -> readIssue issueDir iid) (projectIssues p)
+                 is <- mapM (readIssue issueDir) (projectIssues p)
                  return (p, is)
 
 setIssueStatusR :: IssueId -> Maybe Status -> EitherT ServantErr IO Issue
 setIssueStatusR i (Just s) = throwServantErr $ do
     liftIO $ putStrLn ("Setting issue status of issue " ++ show i ++ " to " ++ show s)
     setIssueStatus issueDir i s
-setIssueStatusR _ Nothing = left $ err500
+setIssueStatusR _ Nothing = left err500
 
 issueR x = bimapEitherT (const err500) id $ readIssue issueDir x
 
