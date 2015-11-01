@@ -1,0 +1,5 @@
+ID 27
+Project 1
+Status Done
+Summary Bug: New issue does not work sometimes
+Description Server error: data/project/3: openFile: resource busy (file is locked)
