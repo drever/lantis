@@ -1,0 +1,6 @@
+ID 66
+Project 1
+Status New
+Summary Bug: setIssueStatus does not release the file handle correctly
+Description Somtimes the file handle is not released correctly and the error "data/issue//13: openFile: resource busy (file is locked)
+" occurs.
