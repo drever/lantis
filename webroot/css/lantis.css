@@ -14,10 +14,7 @@
     margin-left: 5; 
     margin-bottom: 5; 
     width: 640;
-    padding-left: 5;
-    padding-right: 5;
-    padding-top: 5;
-    padding-bottom: 5;
+    padding: 5;
 }
 
 .column { 
@@ -26,28 +23,28 @@
     min-height: 500; 
     position: relative; 
     float: left; 
-    margin-left: 5;
-    margin-right: 5;
-    margin-top: 5;
-    margin-bottom: 5;
-    padding-left: 5;
-    padding-right: 5;
-    padding-top: 5;
-    padding-bottom: 5;
+    margin: 5;
+    padding: 5;
 }
 
 .card { 
     background-color: rgb(225, 255, 205); 
     height: 100; 
     overflow: overlay; 
-    margin-top: 5; 
-    margin-left: 5; 
-    margin-right: 5; 
-    margin-bottom: 5;
-    padding-left: 5;
-    padding-right: 5;
-    padding-top: 5;
-    padding-bottom: 5;
+    margin: 5; 
+    padding: 5;
+}
+
+.edit {
+    background-color: rgba(31, 60, 12, 0.92);
+    width: 500;
+    height: 500;
+    position: absolute;
+    z-index: 2; 
+    margin-top: 65;
+    margin-left: 75;
+    padding: 15;
+    visibility: hidden;
 }
 
 button {
@@ -68,11 +65,12 @@ button.delete {
 
 h1 { 
     font-size: 14; 
-    font-weight: bold 
+    font-weight: lighter
 }
 
 h2 { 
-    font-size: 12 
+    font-size: 12;
+    font-weight: lighter
 }
 
 body { 

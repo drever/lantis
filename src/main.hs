@@ -374,9 +374,15 @@ instance B.ToMarkup (Project, [Issue]) where
              BH.body $ BH.img BH.! A.src "../img/lantis.png"
              BH.h1 $ BH.toHtml (projectName p)
         BH.div BH.! A.id "content" $ do
+             issue
              controls
              mapM_ (column is) (projectStatus p)
 
+issue :: BH.Markup
+issue =
+   BH.div BH.! A.id "issue" BH.! A.class_ "edit" $
+       BH.button BH.! A.class_ "delete" BH.! A.onclick "lantis.hideIssue()" $ "X" 
+   
 controls :: BH.Markup
 controls = 
     BH.div BH.! A.id "controls" $ 
@@ -388,9 +394,9 @@ column is s = BH.div BH.! A.id (BH.toValue $ show s) BH.! A.class_ "column" BH.!
     mapM_ card (filter (\x -> issueStatus x == s) is)
 
 card :: Issue -> BH.Markup
-card i = BH.div BH.! A.id (BH.toValue ("issue" ++ show (issueId i))) BH.! A.class_ "card" BH.! A.draggable (BH.toValue True) BH.! A.ondragstart "lantis.drag(event)" $
+card i = BH.div BH.! A.id (BH.toValue ("issue" ++ show (issueId i))) BH.! A.class_ "card" BH.! A.draggable (BH.toValue True) BH.! A.ondragstart "lantis.drag(event)" BH.! A.ondblclick "lantis.showIssue(lantis.issueIdFromCard(this))" $
     BH.toHtml $ BH.html $ do
-      BH.button BH.! A.class_ "delete" BH.! A.onclick  (BH.toValue $ "lantis.deleteIssue(" ++ show (issueId i) ++ ")") $ "X"
+      BH.button BH.! A.class_ "delete" BH.! A.onclick (BH.toValue $ "lantis.deleteIssue(" ++ show (issueId i) ++ ")") $ "X"
       BH.h2 $ BH.string (T.unpack $ issueSummary i)
       BH.ul $ 
                BH.li $ BH.toMarkup $ "#" ++ show (issueId i)
