@@ -50,7 +50,8 @@
                  method: 'POST'
             })
              .done(function (data) {
-                 $('#' + sourceCard).appendTo(targetColumn);
+                 $('#' + sourceCard).remove();
+                 $(data).appendTo(targetColumn);
             }); 
 	}
 }(window.lantis = window.lantis || {}, jQuery));
