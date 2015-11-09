@@ -116,6 +116,8 @@ data Issue = Issue {
   , issueResolution :: Maybe Resolution
 } deriving (Show, Generic)
 
+newtype IssueE = IssueE Issue 
+
 emptyIssue :: IssueId -> ProjectId -> Issue
 emptyIssue i p =
         Issue
@@ -374,15 +376,16 @@ instance B.ToMarkup (Project, [Issue]) where
              BH.body $ BH.img BH.! A.src "../img/lantis.png"
              BH.h1 $ BH.toHtml (projectName p)
         BH.div BH.! A.id "content" $ do
-             issue
              controls
              mapM_ (column is) (projectStatus p)
 
-issue :: BH.Markup
-issue =
-   BH.div BH.! A.id "issue" BH.! A.class_ "edit" $
-       BH.button BH.! A.class_ "delete" BH.! A.onclick "lantis.hideIssue()" $ "X" 
-   
+instance B.ToMarkup IssueE where
+    toMarkup (IssueE i) = do
+        BH.div BH.! A.id "issue" BH.! A.class_ "edit" $ do
+             BH.button BH.! A.class_ "delete" BH.! A.onclick "lantis.hideIssue()" $ "X" 
+             BH.h2 $ BH.toMarkup $ T.unpack $ issueSummary i 
+             BH.string (T.unpack $ issueDescription i)
+
 controls :: BH.Markup
 controls = 
     BH.div BH.! A.id "controls" $ 
@@ -394,7 +397,7 @@ column is s = BH.div BH.! A.id (BH.toValue $ show s) BH.! A.class_ "column" BH.!
     mapM_ card (filter (\x -> issueStatus x == s) is)
 
 card :: Issue -> BH.Markup
-card i = BH.div BH.! A.id (BH.toValue ("issue" ++ show (issueId i))) BH.! A.class_ "card" BH.! A.draggable (BH.toValue True) BH.! A.ondragstart "lantis.drag(event)" BH.! A.ondblclick "lantis.showIssue(lantis.issueIdFromCard(this))" $
+card i = BH.div BH.! A.id (BH.toValue ("issue" ++ show (issueId i))) BH.! A.class_ "card" BH.! A.draggable (BH.toValue True) BH.! A.ondragstart "lantis.drag(event)" BH.! A.ondblclick "lantis.editIssue(lantis.issueIdFromCard(this))" $
     BH.toHtml $ BH.html $ do
       BH.button BH.! A.class_ "delete" BH.! A.onclick (BH.toValue $ "lantis.deleteIssue(" ++ show (issueId i) ++ ")") $ "X"
       BH.h2 $ BH.string (T.unpack $ issueSummary i)
@@ -443,6 +446,7 @@ type UserAPI = "users" :> ReqBody '[JSON] User :> Post '[JSON] User
          :<|> "deleteIssue" :> Capture "id" IssueId :> Post '[JSON] IssueId
          :<|> "users" :> Get '[JSON] [User]
          :<|> "issue" :> Capture "id" IssueId :> Get '[HTML] Issue
+         :<|> "issueEdit" :> Capture "id" IssueId :> Get '[HTML] IssueE
          :<|> "project" :> Capture "id" ProjectId :> Get '[HTML] (Project, [Issue])
          :<|> "setIssueStatus" :> Capture "id" IssueId :> QueryParam "status" Status :> Post '[HTML] Issue
          :<|> "js" :> Raw
@@ -456,13 +460,15 @@ server = createUserR
    :<|> createIssueR 
    :<|> deleteIssueR 
    :<|> usersR
-   :<|> issueR 
+   :<|> issueR
+   :<|> issueEditR
    :<|> projectR 
    :<|> setIssueStatusR
    :<|> serveDirectory jsDir
    :<|> serveDirectory cssDir
    :<|> serveDirectory imgDir
 
+createUserR :: User -> EitherT ServantErr IO User
 createUserR u = lift $ do
                   print u
                   i <- nextId userDir
@@ -470,9 +476,13 @@ createUserR u = lift $ do
                   writeUser (userDir ++ show i) u'
                   return u'
 
+createIssueR :: ProjectId -> EitherT ServantErr IO Issue
 createIssueR p = throwServantErr $ createIssue issueDir projectDir p
+
+deleteIssueR :: IssueId -> EitherT ServantErr IO IssueId
 deleteIssueR p = throwServantErr $ deleteIssue issueDir projectDir p
 
+projectR :: ProjectId -> EitherT ServantErr IO (Project, [Issue])
 projectR x = throwServantErr $ do 
                  p <- readProject projectDir x
                  is <- mapM (readIssue issueDir) (projectIssues p)
@@ -484,8 +494,13 @@ setIssueStatusR i (Just s) = throwServantErr $ do
     setIssueStatus issueDir i s
 setIssueStatusR _ Nothing = left err500
 
+issueR :: IssueId -> EitherT ServantErr IO Issue
 issueR x = bimapEitherT (const err500) id $ readIssue issueDir x
 
+issueEditR :: IssueId -> EitherT ServantErr IO IssueE
+issueEditR x = bimapEitherT (const err500) id $ fmap IssueE $ readIssue issueDir x
+
+usersR :: EitherT ServantErr IO [User]
 usersR = do
            liftIO $ putStrLn "Listing all users"
            bimapEitherT (const err500) id $ listUser userDir

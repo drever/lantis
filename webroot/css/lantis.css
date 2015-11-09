@@ -37,6 +37,8 @@
 
 .edit {
     background-color: rgba(31, 60, 12, 0.92);
+    color: white;
+    font-size: 14;
     width: 500;
     height: 500;
     position: absolute;
@@ -44,7 +46,6 @@
     margin-top: 65;
     margin-left: 75;
     padding: 15;
-    visibility: hidden;
 }
 
 button {

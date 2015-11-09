@@ -9,12 +9,22 @@
 	    });
 	}
 
-        lantis.showIssue = function (issueId) {
-             $('.edit').css('visibility', 'visible');
+        lantis.editIssue = function (issueId) {
+            $.ajax({
+                url: "../issueEdit/" + issueId,
+                method: 'GET'
+            })
+             .done(function(data) {
+                  lantis.showIssue(data);
+            });
+        }
+
+        lantis.showIssue = function (issue) {
+             $('#content').append(issue);
         }
   
         lantis.hideIssue = function () {
-             $('.edit').css('visibility', 'hidden');
+             $('#issue').remove();
         }
 
         lantis.issueIdFromCard = function (issue) {
