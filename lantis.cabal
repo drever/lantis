@@ -24,6 +24,8 @@ Executable lantis
                 , parsec
                 , directory
                 , bytestring
+                , QuickCheck
+
   Main-Is:        main.hs
   Hs-Source-Dirs: src
 

@@ -2,7 +2,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeOperators #-}
 
 {-# LANGUAGE FlexibleInstances #-}
@@ -30,6 +29,8 @@ import Network.Wai.Handler.Warp
 import Servant
 import Servant.HTML.Blaze
 
+import Model
+
 -- util
 --
 listDirectory :: FilePath -> IO [FilePath]
@@ -44,101 +45,6 @@ guardedFileOp op fp = do
 
 throwServantErr = bimapEitherT convertError id
 
--- 
--- ADTs
-
-data Status =
-      InProgress
-    | Done
-    | New
-    | Feedback
-    | Acknowledged
-    | Confirmed
-    | Assigned
-    | Resovled
-    | Closed deriving (Show, Read, Generic, Eq)
-
-data Project = Project {
-    projectName :: T.Text
-  , projectId :: ProjectId
-  , projectIssues :: [IssueId]
-  , projectStatus :: [Status]
-} deriving (Show)
-
-data User = User {
-    userName :: T.Text
-  , userId :: UserId
-} deriving (Show, Generic)
-
-data Category = Bug | Feature | ActionItem deriving (Show, Read, Generic)
-
-type ProjectId = Int
-type UserId = Int
-type IssueId = Int
-type CommentId = Int
-
-data Priority = Low | High | Urgent deriving (Show, Generic)
-
-data Severity = Minor | Major deriving (Show, Generic)
-
-data Reproducibility = Sometimes | Always deriving (Show, Generic)
-
-data Resolution = ResolutionOpen | ResolutionClosed deriving (Show, Generic)
-
-data Relationship = RelationshipParent IssueId | RelationshipRelated IssueId deriving (Show, Generic)
-
-data ViewStatus = Public | Private deriving (Show, Read, Generic)
-
-data Comment = Comment {
-    commentCommenter :: User
-  , commentId :: CommentId
-  , commentText :: T.Text
-  , commentDate :: UTCTime
-} deriving (Show)
-
-data Issue = Issue {
-    issueStatus :: Status
-  , issueSummary :: T.Text
-  , issueDescription :: T.Text 
-  , issueTags :: [T.Text]
-  , issueRelationships :: [Relationship]
-  , issueId :: IssueId
-  , issueProject :: ProjectId
-  , issueCategory :: Maybe Category 
-  , issueDateSubmitted :: UTCTime
-  , issueLastUpdate :: UTCTime
-  , issueReporter :: UserId
-  , issueViewStatus :: ViewStatus
-  , issueAssignedTo :: Maybe UserId
-  , issueSeverity :: Maybe Severity
-  , issuePriority :: Maybe Priority
-  , issueReproducibility :: Maybe Reproducibility 
-  , issueResolution :: Maybe Resolution
-} deriving (Show, Generic)
-
-newtype IssueE = IssueE Issue 
-
-emptyIssue :: IssueId -> ProjectId -> Issue
-emptyIssue i p =
-        Issue
-	    New -- status
-	    "empty" --summary 
-	    "empty" --description
-	    [] -- tags
-	    [] -- relationships
-	    i -- issueId 
-	    p -- issueProject :: ProjectId
-	    Nothing -- issueCategory :: Maybe Category 
-	    (UTCTime (fromGregorian 1970 0 0) 0)--issueDateSubmitted :: UTCTime
-	    (UTCTime (fromGregorian 1970 0 0) 0)--issueLastUpdate :: UTCTime
-	    0 --issueReporter :: UserId
-	    Public --issueViewStatus :: ViewStatus
-	    Nothing --issueAssignedTo :: Maybe User
-	    Nothing --issueSeverity :: Maybe Severity
-	    Nothing --issuePriority :: Maybe Priority
-	    Nothing --issueReproducibility :: Maybe Reproducibility 
-	    Nothing --issueResolution :: Maybe Resolution
-
 -- | Environment
 --
 
@@ -151,17 +57,6 @@ cssDir = "webroot/css"
 
 imgDir = "webroot/img"
 
--- | 
--- Data manipulation
-
-changeId :: User -> Int -> User
-changeId (User n i) = User n
-
-addIssue :: Issue -> Project -> Project
-addIssue i p = p { projectIssues = issueId i:projectIssues p }
-
-removeIssue :: IssueId -> Project -> Project
-removeIssue i p = p { projectIssues = filter (/=i) (projectIssues p) }
 
 -- |
 -- IO
@@ -408,39 +303,6 @@ card i = BH.div BH.! A.id (BH.toValue ("issue" ++ show (issueId i))) BH.! A.clas
 -- Servant
 --
 
-instance FromText Status where
-    fromText = Just . read . T.unpack
-
-instance ToJSON User
-instance FromJSON User
-
-instance ToJSON Issue
-instance FromJSON Issue
-
-instance ToJSON Category
-instance FromJSON Category
-
-instance ToJSON Status
-instance FromJSON Status
-
-instance ToJSON Priority
-instance FromJSON Priority
-
-instance ToJSON Severity
-instance FromJSON Severity
-
-instance ToJSON Reproducibility
-instance FromJSON Reproducibility
-
-instance FromJSON Resolution
-instance ToJSON Resolution
-
-instance FromJSON Relationship
-instance ToJSON Relationship
-
-instance FromJSON ViewStatus
-instance ToJSON ViewStatus
-
 type UserAPI = "users" :> ReqBody '[JSON] User :> Post '[JSON] User
          :<|> "createIssue" :> Capture "id" ProjectId :> Post '[HTML] Issue
          :<|> "deleteIssue" :> Capture "id" IssueId :> Post '[JSON] IssueId
@@ -510,3 +372,12 @@ app = serve userAPI server
 
 main :: IO ()
 main = run 8081 app
+
+-- Testing
+--
+-- 1) addIssue to project
+-- 2) read project
+-- 3) check 
+--     a) list of projects length has grown by one
+--     b) new issue is part of project issues
+
