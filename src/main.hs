@@ -30,6 +30,7 @@ import Servant
 import Servant.HTML.Blaze
 
 import Model
+import Environment
 
 -- util
 --
@@ -44,19 +45,6 @@ guardedFileOp op fp = do
         else left $ "file not found: " ++ fp
 
 throwServantErr = bimapEitherT convertError id
-
--- | Environment
---
-
-userDir = "data/user/"
-issueDir = "data/issue/"
-projectDir = "data/project/"
-
-jsDir = "webroot/js"
-cssDir = "webroot/css"
-
-imgDir = "webroot/img"
-
 
 -- |
 -- IO
