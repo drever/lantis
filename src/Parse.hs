@@ -1,6 +1,5 @@
 module Parse (
     parseUser
-  , parseIssue
   , parseProject
     ) where
 
@@ -22,39 +21,9 @@ userParser = do
     n <- T.pack `fmap` preferenceParser "Name"
     return $ User n i
 
-parseIssue :: String -> Either GeneralError Issue
-parseIssue = rethrow . parse issueParser "Could not parse issue"
-
 rethrow :: Either ParseError a -> Either GeneralError a
 rethrow (Left e) = Left $ show e
 rethrow (Right x) = Right x
-
-issueParser :: GenParser Char st Issue
-issueParser = do
-    i <- read `fmap` preferenceParser "ID"
-    p <- read `fmap` preferenceParser "Project"
-    s <- read `fmap` preferenceParser "Status"
-    su <- T.pack `fmap` preferenceParser "Summary"
-    d <- T.pack `fmap` preferenceParser "Description"
-    return $
-        Issue
-	    s -- status
-	    su --summary 
-	    d --description
-	    [] -- tags
-	    [] -- relationships
-	    i -- issueId 
-	    p -- issueProject :: ProjectId
-	    Nothing -- issueCategory :: Maybe Category 
-	    (UTCTime (fromGregorian 1970 0 0) 0)--issueDateSubmitted :: UTCTime
-	    (UTCTime (fromGregorian 1970 0 0) 0)--issueLastUpdate :: UTCTime
-	    0 --issueReporter :: UserId
-	    Public --issueViewStatus :: ViewStatus
-	    Nothing --issueAssignedTo :: Maybe User
-	    Nothing --issueSeverity :: Maybe Severity
-	    Nothing --issuePriority :: Maybe Priority
-	    Nothing --issueReproducibility :: Maybe Reproducibility 
-	    Nothing --issueResolution :: Maybe Resolution
 
 parseProject :: String -> Either ParseError Project
 parseProject = parse projectParser "Could not parse project"

@@ -26,6 +26,8 @@ import IO
 import Markup
 import Routes
 
+import Tools
+
 app :: Application
 app = serve userAPI server
 

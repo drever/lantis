@@ -25,6 +25,8 @@ Executable lantis
                 , directory
                 , bytestring
                 , QuickCheck
+                , yaml
+                , transformers
 
   Main-Is:        main.hs
   Hs-Source-Dirs: src

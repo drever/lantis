@@ -62,43 +62,43 @@ data Status =
     | Confirmed
     | Assigned
     | Resovled
-    | Closed deriving (Show, Read, Eq)
+    | Closed deriving (Show, Read, Eq, Generic)
 
 data Project = Project {
     projectName :: T.Text
   , projectId :: ProjectId
   , projectIssues :: [IssueId]
   , projectStatus :: [Status]
-} deriving (Show)
+} deriving (Show, Generic)
 
 data User = User {
     userName :: T.Text
   , userId :: UserId
 } deriving (Show, Generic)
 
-data Category = Bug | Feature | ActionItem deriving (Show, Read)
+data Category = Bug | Feature | ActionItem deriving (Show, Read, Generic)
 
 type UserId = Int
 type CommentId = Int
 
-data Priority = Low | High | Urgent deriving (Show)
+data Priority = Low | High | Urgent deriving (Show, Generic)
 
-data Severity = Minor | Major deriving (Show)
+data Severity = Minor | Major deriving (Show, Generic)
 
-data Reproducibility = Sometimes | Always deriving (Show)
+data Reproducibility = Sometimes | Always deriving (Show, Generic)
 
-data Resolution = ResolutionOpen | ResolutionClosed deriving (Show)
+data Resolution = ResolutionOpen | ResolutionClosed deriving (Show, Generic)
 
-data Relationship = RelationshipParent IssueId | RelationshipRelated IssueId deriving (Show)
+data Relationship = RelationshipParent IssueId | RelationshipRelated IssueId deriving (Show, Generic)
 
-data ViewStatus = Public | Private deriving (Show, Read)
+data ViewStatus = Public | Private deriving (Show, Read, Generic)
 
 data Comment = Comment {
     commentCommenter :: User
   , commentId :: CommentId
   , commentText :: T.Text
   , commentDate :: UTCTime
-} deriving (Show)
+} deriving (Show, Generic)
 
 data Issue = Issue {
     issueStatus :: Status
@@ -118,7 +118,7 @@ data Issue = Issue {
   , issuePriority :: Maybe Priority
   , issueReproducibility :: Maybe Reproducibility 
   , issueResolution :: Maybe Resolution
-} deriving (Show)
+} deriving (Show, Generic)
 
 newtype IssueE = IssueE Issue 
 
@@ -127,6 +127,36 @@ newtype IssueE = IssueE Issue
 
 instance ToJSON User
 instance FromJSON User
+
+instance ToJSON Project
+instance FromJSON Project
+
+instance ToJSON Status
+instance FromJSON Status
+
+instance ToJSON Issue
+instance FromJSON Issue
+
+instance ToJSON Category
+instance FromJSON Category
+
+instance ToJSON Priority
+instance FromJSON Priority
+
+instance ToJSON Severity
+instance FromJSON Severity
+
+instance ToJSON Reproducibility
+instance FromJSON Reproducibility
+
+instance FromJSON Resolution
+instance ToJSON Resolution
+
+instance FromJSON Relationship
+instance ToJSON Relationship
+
+instance FromJSON ViewStatus
+instance ToJSON ViewStatus
 
 -- | 
 -- Data manipulation

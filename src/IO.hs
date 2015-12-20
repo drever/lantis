@@ -2,14 +2,11 @@
 
 module IO (
     readData
-  , readUser
   , pappend
   , writeUser
   , renderProject
   , renderIssue
   , nextId
-  , listUser
-  , createUser
   , createIssue
   , deleteIssue
   , projectIdForIssue
@@ -25,7 +22,6 @@ import System.IO
 import System.Directory (removeFile, doesFileExist)
 
 import Model (User (..), Issue (..), Project (..), Status (..), ProjectId, IssueId, UserId, emptyIssue, addIssue, removeIssue)
-import Parse (parseIssue, parseProject, parseUser)
 import Util (listDirectory, guardedFileOp, GeneralError)
 
 import qualified Data.Text as T
@@ -33,13 +29,12 @@ import Text.ParserCombinators.Parsec (ParseError)
 
 import Control.Monad.Trans.Either
 
+import Data.Yaml
+
 readData :: (String -> Either ParseError a) -> FilePath -> EitherT ParseError IO a
 readData parser fp = do
     p <- lift $ readFile fp
     hoistEither $ parser p 
-
-readUser :: FilePath -> UserId -> EitherT ParseError IO User
-readUser fp ui = readData parseUser (fp ++ "/" ++ show ui)
 
 pappend :: String -> T.Text -> T.Text -> T.Text
 pappend k v = T.append (T.pack k `T.append` " " `T.append` v `T.append` "\n")
@@ -71,20 +66,8 @@ nextId fp = do
         then return 1 
         else return $ maximum c + 1
 
-listUser :: FilePath -> EitherT ParseError IO [User]
-listUser fp = do
-    f <- liftIO $ listDirectory fp
-    mapM (readUser fp . read) f
- 
-createUser :: FilePath -> T.Text -> IO User
-createUser fp n = do
-    i <- nextId fp
-    let u = User n i
-    writeUser (fp ++"/" ++ show i) u
-    return u 
-
 createIssue :: FilePath -> FilePath -> ProjectId -> EitherT String IO Issue
-createIssue ip pp pi = do
+createIssue ip pp pi = undefined {-do
     projectH <- guardedFileOp (`openFile` ReadMode) (pp ++ "/" ++ show pi)
     p <- liftIO $ hGetContents projectH
     let parsedProject = hoistEither $ parseProject p
@@ -94,7 +77,7 @@ createIssue ip pp pi = do
     let newIssue = emptyIssue i (projectId proj)
     liftIO $ writeFile (ip ++ "/" ++ show i) (T.unpack $ renderIssue newIssue)
     liftIO $ writeFile (pp ++ "/" ++ show (projectId proj)) (T.unpack $ renderProject (addIssue newIssue proj))
-    return newIssue
+    return newIssue-}
 
 deleteIssue :: FilePath -> FilePath -> IssueId -> EitherT String IO IssueId
 deleteIssue ip pp i = do
@@ -118,14 +101,11 @@ projectIdForIssue fp i = do
 
 readIssue :: FilePath -> IssueId -> EitherT GeneralError IO Issue
 readIssue fp ii = do
-    b <- liftIO $ doesFileExist (fp ++ "/" ++ show ii)
-    if b
-        then do p <- lift $ readFile (fp ++ "/" ++ show ii)
-		bimapEitherT show id $ hoistEither $ parseIssue p
-        else left $ "File not found for issue id " ++ show ii
+    i <- liftIO (decodeFileEither (fp ++ "/" ++ show ii ++ ".yaml"))
+    bimapEitherT show id (hoistEither i)
 
 setIssueStatus :: FilePath -> IssueId -> Status -> EitherT GeneralError IO Issue
-setIssueStatus fp i s = do
+setIssueStatus fp i s = undefined {-do
     h <- guardedFileOp (`openFile` ReadMode) isf
     issue <- liftIO $ hGetContents h
     parsedIssue <- cid s `fmap` hoistEither (parseIssue issue)
@@ -134,13 +114,17 @@ setIssueStatus fp i s = do
     return parsedIssue
     where cid :: Status -> Issue -> Issue
           cid s i = i { issueStatus = s }
-          isf = fp ++ "/" ++ show i
+          isf = fp ++ "/" ++ show i-}
 
 readProject :: FilePath -> ProjectId -> EitherT GeneralError IO Project
 readProject fp pi = do
+    p <- liftIO (decodeFileEither (fp ++ "/" ++ show pi ++ ".yaml"))
+    bimapEitherT show id (hoistEither p)
+
+{-readProject fp pi = do
     projectH <- guardedFileOp (`openFile` ReadMode) (fp ++ "/" ++ show pi)
     p <- liftIO $ hGetContents projectH
     let parsedProject = hoistEither $ parseProject p
     proj <- bimapEitherT show id parsedProject
     liftIO $ hClose projectH
-    return proj   
+    return proj   -}
