@@ -1,0 +1,21 @@
+issueId: 3
+issueDateSubmitted: 1970-01-01T00:00:00Z
+issueProject: 2
+issueResolution: null
+issueDescription: ! 'Add a button to the gui and store the new issue. Don''t forget
+  to update the project.
+
+
+'
+issueSummary: Add create new issue button
+issueViewStatus: Public
+issueTags: []
+issueRelationships: []
+issueSeverity: null
+issueLastUpdate: 1970-01-01T00:00:00Z
+issueAssignedTo: null
+issueStatus: Done
+issueReporter: 0
+issuePriority: null
+issueReproducibility: null
+issueCategory: null

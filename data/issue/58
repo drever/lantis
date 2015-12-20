@@ -1,5 +1,0 @@
-ID 58
-Project 1
-Status New
-Summary Test file IO with quickcheck
-Description Use Test.QuickCheck.Monadic

@@ -1,0 +1,38 @@
+issueId: 67
+issueDateSubmitted: 1970-01-01T00:00:00Z
+issueProject: 1
+issueResolution: null
+issueDescription: ! 'The issuebody is just one line. Make it more then one line \n
+  That would be great!
+
+  So does it work??
+
+  It should keep the newlines!
+
+
+  How should the issue body be implemented? Does pandoc have a specific format?
+
+
+  It should have checklists like that:
+
+  [X] implement parser
+
+  [ ] figure out issue body format
+
+  [ ] shave yak
+
+
+
+'
+issueSummary: Multiline support for issue body
+issueViewStatus: Public
+issueTags: []
+issueRelationships: []
+issueSeverity: null
+issueLastUpdate: 1970-01-01T00:00:00Z
+issueAssignedTo: null
+issueStatus: InProgress
+issueReporter: 0
+issuePriority: null
+issueReproducibility: null
+issueCategory: null

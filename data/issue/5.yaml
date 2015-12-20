@@ -1,0 +1,20 @@
+issueId: 5
+issueDateSubmitted: 1970-01-01T00:00:00Z
+issueProject: 1
+issueResolution: null
+issueDescription: ! '1) Import lantis DB from Mantis db 2) export lantis DB to Mantis
+  DB
+
+'
+issueSummary: Sync lantis with mantis
+issueViewStatus: Public
+issueTags: []
+issueRelationships: []
+issueSeverity: null
+issueLastUpdate: 1970-01-01T00:00:00Z
+issueAssignedTo: null
+issueStatus: New
+issueReporter: 0
+issuePriority: null
+issueReproducibility: null
+issueCategory: null

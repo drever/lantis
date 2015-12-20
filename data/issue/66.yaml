@@ -1,0 +1,22 @@
+issueId: 66
+issueDateSubmitted: 1970-01-01T00:00:00Z
+issueProject: 1
+issueResolution: null
+issueDescription: ! 'Somtimes the file handle is not released correctly and the error
+  "data/issue//13: openFile: resource busy (file is locked)
+
+  " occurs.
+
+'
+issueSummary: ! 'Bug: setIssueStatus does not release the file handle correctly'
+issueViewStatus: Public
+issueTags: []
+issueRelationships: []
+issueSeverity: null
+issueLastUpdate: 1970-01-01T00:00:00Z
+issueAssignedTo: null
+issueStatus: New
+issueReporter: 0
+issuePriority: null
+issueReproducibility: null
+issueCategory: null

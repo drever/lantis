@@ -1,0 +1,12 @@
+projectStatus:
+- New
+- InProgress
+- Done
+- Feedback
+- Acknowledged
+projectIssues:
+- 32
+- 12
+- 13
+projectName: lantis
+projectId: 2
