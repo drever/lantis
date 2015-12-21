@@ -31,6 +31,8 @@ import Control.Monad.Trans.Either
 
 import Data.Yaml
 
+import Data.List.Split
+
 readData :: (String -> Either ParseError a) -> FilePath -> EitherT ParseError IO a
 readData parser fp = do
     p <- lift $ readFile fp
@@ -61,32 +63,29 @@ renderIssue i =
 
 nextId :: FilePath -> IO Int
 nextId fp = do
-    c <- map read `fmap` listDirectory fp
+    c <- map (read . head . splitOn ".") `fmap` listDirectory fp
     if null c 
         then return 1 
         else return $ maximum c + 1
 
 createIssue :: FilePath -> FilePath -> ProjectId -> EitherT String IO Issue
-createIssue ip pp pi = undefined {-do
-    projectH <- guardedFileOp (`openFile` ReadMode) (pp ++ "/" ++ show pi)
-    p <- liftIO $ hGetContents projectH
-    let parsedProject = hoistEither $ parseProject p
-    proj <- bimapEitherT show id parsedProject
-    liftIO $ hClose projectH
+createIssue ip pp pi = do
+    project <- readProject pp pi
     i <- liftIO $ nextId ip
-    let newIssue = emptyIssue i (projectId proj)
-    liftIO $ writeFile (ip ++ "/" ++ show i) (T.unpack $ renderIssue newIssue)
-    liftIO $ writeFile (pp ++ "/" ++ show (projectId proj)) (T.unpack $ renderProject (addIssue newIssue proj))
-    return newIssue-}
+    let newIssue = emptyIssue i (projectId project)
+    liftIO $ putStrLn $ "Creating new issue with id " ++ show i
+    liftIO $ encodeFile (ip ++ "/" ++ show i ++ ".yaml") newIssue
+    liftIO $ encodeFile (pp ++ "/" ++ show pi ++ ".yaml") (addIssue newIssue project)
+    return newIssue
 
 deleteIssue :: FilePath -> FilePath -> IssueId -> EitherT String IO IssueId
 deleteIssue ip pp i = do
     liftIO $ removeFile ip'
     pid <- projectIdForIssue pp i
     p <- readProject pp pid    
-    liftIO $ writeFile (pp ++ "/" ++ show pid) (T.unpack $ renderProject $ removeIssue i p) 
+    liftIO $ writeFile (pp ++ "/" ++ show pid ++ ".yaml") (T.unpack $ renderProject $ removeIssue i p) 
     return i
-    where ip' = ip ++ show i
+    where ip' = ip ++ show i ++ ".yaml"
   
 projectIdForIssue :: FilePath -> IssueId -> EitherT GeneralError IO ProjectId
 projectIdForIssue fp i = do

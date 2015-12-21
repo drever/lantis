@@ -27,6 +27,7 @@ Executable lantis
                 , QuickCheck
                 , yaml
                 , transformers
+                , split
 
   Main-Is:        main.hs
   Hs-Source-Dirs: src
