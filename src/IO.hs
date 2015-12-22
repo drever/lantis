@@ -73,14 +73,14 @@ createIssue ip pp pi = do
     project <- readProject pp pi
     i <- liftIO $ nextId ip
     let newIssue = emptyIssue i (projectId project)
-    liftIO $ putStrLn $ "Creating new issue with id " ++ show i
+    liftIO $ putStrLn $ "Create new issue " ++ show i ++ " for project " ++ show pi
     liftIO $ encodeFile (ip ++ "/" ++ show i ++ ".yaml") newIssue
     liftIO $ encodeFile (pp ++ "/" ++ show pi ++ ".yaml") (addIssue newIssue project)
     return newIssue
 
 deleteIssue :: FilePath -> FilePath -> IssueId -> EitherT String IO IssueId
 deleteIssue ip pp i = do
-    liftIO $ putStr $ "Deleting issue " ++ show i
+    liftIO $ putStrLn $ "Delete issue " ++ show i
     liftIO $ removeFile ip'
     pid <- projectIdForIssue pp i
     p <- readProject pp pid    
@@ -137,10 +137,3 @@ readProject fp pi = do
     p <- liftIO (decodeFileEither (fp ++ "/" ++ show pi ++ ".yaml"))
     bimapEitherT show id (hoistEither p)
 
-{-readProject fp pi = do
-    projectH <- guardedFileOp (`openFile` ReadMode) (fp ++ "/" ++ show pi)
-    p <- liftIO $ hGetContents projectH
-    let parsedProject = hoistEither $ parseProject p
-    proj <- bimapEitherT show id parsedProject
-    liftIO $ hClose projectH
-    return proj   -}

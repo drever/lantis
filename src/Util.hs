@@ -28,8 +28,8 @@ guardedFileOp op fp = do
         else left $ "file not found: " ++ fp
 
 throwServantErr :: Functor m => EitherT GeneralError m a -> EitherT ServantErr m a
-throwServantErr e = bimapEitherT convertError id e
+throwServantErr = bimapEitherT convertError id
 
 convertError :: GeneralError -> ServantErr
-convertError e = ServantErr 103 e BS.empty []
+convertError e = ServantErr 500 e BS.empty []
 

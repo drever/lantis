@@ -32,7 +32,10 @@ app :: Application
 app = serve userAPI server
 
 main :: IO ()
-main = run 8081 app
+main = do
+    let p = 8081
+    putStrLn $ "Running lantis server at " ++ show p
+    run p app
 
 -- Testing
 --
