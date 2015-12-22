@@ -14,12 +14,15 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Either
 
-import Model (Issue (..), Project (..), Status (..), User (..), IssueE (..), IssueId, ProjectId, changeId)
+import Model (Issue (..), Project (..), Status (..), User (..), IssueE (..), IssueId, ProjectId)
 import IO (readIssue, deleteIssue, setIssueStatus, createIssue, readProject)
 
 import Environment (userDir, issueDir, projectDir, jsDir, cssDir, imgDir)
 
-import Util (throwServantErr)
+import Util (throwServantErr, unique)
+
+import Test.QuickCheck
+import Testing
 
 -- Servant
 --
@@ -34,6 +37,10 @@ type UserAPI = "createIssue" :> Capture "id" ProjectId :> Post '[HTML] Issue
          :<|> "css" :> Raw
          :<|> "img" :> Raw
 
+         :<|> "testissue" :> Get '[HTML] Issue
+         :<|> "testproject" :> Get '[HTML] Project
+         :<|> "testprojectissues" :> Get '[HTML] (Project, [Issue])
+
 userAPI :: Proxy UserAPI
 userAPI = Proxy
 
@@ -46,6 +53,10 @@ server = createIssueR
    :<|> serveDirectory jsDir
    :<|> serveDirectory cssDir
    :<|> serveDirectory imgDir
+
+   :<|> testIssueR
+   :<|> testProjectR
+   :<|> testProjectIssuesR
 
 createIssueR :: ProjectId -> EitherT ServantErr IO Issue
 createIssueR p = throwServantErr $ createIssue issueDir projectDir p
@@ -70,3 +81,14 @@ issueR x = bimapEitherT (const err500) id $ readIssue issueDir x
 issueEditR :: IssueId -> EitherT ServantErr IO IssueE
 issueEditR x = bimapEitherT (const err500) id $ fmap IssueE $ readIssue issueDir x
 
+testIssueR :: EitherT ServantErr IO Issue
+testIssueR = liftIO $ generate arbitrary
+
+testProjectR :: EitherT ServantErr IO Project
+testProjectR = liftIO $ generate arbitrary
+
+testProjectIssuesR :: EitherT ServantErr IO (Project, [Issue])
+testProjectIssuesR = do
+    p <- liftIO $ generate arbitrary
+    is <- liftIO $ generate arbitrary
+    return (p { projectIssues = unique $ projectIssues p, projectStatus = unique $ projectStatus p }, is)

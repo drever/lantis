@@ -25,6 +25,7 @@ import Util
 import IO
 import Markup
 import Routes
+import Testing
 
 import Tools
 

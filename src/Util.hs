@@ -3,6 +3,7 @@ module Util (
    , listDirectory
    , guardedFileOp
    , throwServantErr 
+   , unique
     ) where
 
 import qualified Data.ByteString.Lazy as BS
@@ -33,3 +34,5 @@ throwServantErr = bimapEitherT convertError id
 convertError :: GeneralError -> ServantErr
 convertError e = ServantErr 500 e BS.empty []
 
+unique :: Eq a => [a] -> [a]
+unique = reverse . foldl (\acc x -> if x `elem` acc then acc else x:acc) []

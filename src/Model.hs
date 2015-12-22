@@ -8,11 +8,16 @@ module Model (
    , IssueE (..)
    , Status (..)
    , ViewStatus (..)
+   , Category (..)
+   , Relationship (..)
+   , Severity (..)
+   , Priority (..)
+   , Reproducibility (..)
+   , Resolution (..)
    , ProjectId
    , IssueId
    , UserId
    , emptyIssue
-   , changeId
    , addIssue
    , removeIssue
    ) where
@@ -62,7 +67,7 @@ data Status =
     | Confirmed
     | Assigned
     | Resovled
-    | Closed deriving (Show, Read, Eq, Generic)
+    | Closed deriving (Show, Read, Eq, Generic, Enum)
 
 data Project = Project {
     projectName :: T.Text
@@ -76,22 +81,22 @@ data User = User {
   , userId :: UserId
 } deriving (Show, Generic)
 
-data Category = Bug | Feature | ActionItem deriving (Show, Read, Generic)
+data Category = Bug | Feature | ActionItem deriving (Show, Read, Generic, Enum)
 
 type UserId = Int
 type CommentId = Int
 
-data Priority = Low | High | Urgent deriving (Show, Generic)
+data Priority = Low | High | Urgent deriving (Show, Generic, Enum)
 
-data Severity = Minor | Major deriving (Show, Generic)
+data Severity = Minor | Major deriving (Show, Generic, Enum)
 
-data Reproducibility = Sometimes | Always deriving (Show, Generic)
+data Reproducibility = Sometimes | Always deriving (Show, Generic, Enum)
 
-data Resolution = ResolutionOpen | ResolutionClosed deriving (Show, Generic)
+data Resolution = ResolutionOpen | ResolutionClosed deriving (Show, Generic, Enum)
 
 data Relationship = RelationshipParent IssueId | RelationshipRelated IssueId deriving (Show, Generic)
 
-data ViewStatus = Public | Private deriving (Show, Read, Generic)
+data ViewStatus = Public | Private deriving (Show, Read, Generic, Enum)
 
 data Comment = Comment {
     commentCommenter :: User
@@ -160,9 +165,6 @@ instance ToJSON ViewStatus
 
 -- | 
 -- Data manipulation
-
-changeId :: User -> Int -> User
-changeId (User n i) = User n
 
 addIssue :: Issue -> Project -> Project
 addIssue i p = p { projectIssues = issueId i:projectIssues p }
