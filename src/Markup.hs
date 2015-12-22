@@ -50,6 +50,7 @@ instance B.ToMarkup IssueE where
              BH.ul $ do
                  BH.li . BH.toMarkup $ "Created: " ++ show (issueDateSubmitted i)
                  BH.li . BH.toMarkup $ "Last updated: " ++ show (issueLastUpdate i)
+             BH.div . BH.i . BH.string . show $ issueStatus i
              renderMarkdown (issueDescription i)             
 
 renderMarkdown :: T.Text -> BH.Markup
