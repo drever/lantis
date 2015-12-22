@@ -1,12 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module IO (
-    readData
-  , pappend
-  , writeUser
-  , renderProject
-  , renderIssue
-  , nextId
+    nextId
   , createIssue
   , deleteIssue
   , projectIdForIssue
@@ -33,34 +28,6 @@ import Control.Monad.Trans.Either
 import Data.Yaml
 
 import Data.List.Split
-
-readData :: (String -> Either ParseError a) -> FilePath -> EitherT ParseError IO a
-readData parser fp = do
-    p <- lift $ readFile fp
-    hoistEither $ parser p 
-
-pappend :: String -> T.Text -> T.Text -> T.Text
-pappend k v = T.append (T.pack k `T.append` " " `T.append` v `T.append` "\n")
-
-writeUser :: FilePath -> User -> IO ()
-writeUser fp p = writeFile fp $ T.unpack $  
-    pappend "ID" (T.pack $ show $ userId p) $
-    pappend "Name" (userName p) ""
-
-renderProject :: Project -> T.Text
-renderProject p = 
-    pappend "ID" (T.pack $ show $ projectId p) $
-    pappend "Name" (projectName p) $
-    pappend "Issues" (T.pack $ show $ projectIssues p) $ 
-    pappend "Status" (T.pack $ show $ projectStatus p) ""
-
-renderIssue :: Issue -> T.Text
-renderIssue i = 
-    pappend "ID" (T.pack $ show $ issueId i) $
-    pappend "Project" (T.pack $ show $ issueProject i) $
-    pappend "Status" (T.pack $ show $ issueStatus i) $
-    pappend "Summary" (issueSummary i) $
-    pappend "Description" (issueDescription i) ""
 
 nextId :: FilePath -> IO Int
 nextId fp = do

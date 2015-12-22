@@ -15,7 +15,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Either
 
 import Model (Issue (..), Project (..), Status (..), User (..), IssueE (..), IssueId, ProjectId, changeId)
-import IO (writeUser, nextId, readIssue, deleteIssue, setIssueStatus, createIssue, readProject)
+import IO (nextId, readIssue, deleteIssue, setIssueStatus, createIssue, readProject)
 
 import Environment (userDir, issueDir, projectDir, jsDir, cssDir, imgDir)
 
@@ -24,8 +24,7 @@ import Util (throwServantErr)
 -- Servant
 --
 
-type UserAPI = "users" :> ReqBody '[JSON] User :> Post '[JSON] User
-         :<|> "createIssue" :> Capture "id" ProjectId :> Post '[HTML] Issue
+type UserAPI = "createIssue" :> Capture "id" ProjectId :> Post '[HTML] Issue
          :<|> "deleteIssue" :> Capture "id" IssueId :> Post '[JSON] IssueId
          :<|> "issue" :> Capture "id" IssueId :> Get '[HTML] Issue
          :<|> "issueEdit" :> Capture "id" IssueId :> Get '[HTML] IssueE
@@ -38,8 +37,7 @@ type UserAPI = "users" :> ReqBody '[JSON] User :> Post '[JSON] User
 userAPI :: Proxy UserAPI
 userAPI = Proxy
 
-server = createUserR 
-   :<|> createIssueR 
+server = createIssueR 
    :<|> deleteIssueR 
    :<|> issueR
    :<|> issueEditR
@@ -48,14 +46,6 @@ server = createUserR
    :<|> serveDirectory jsDir
    :<|> serveDirectory cssDir
    :<|> serveDirectory imgDir
-
-createUserR :: User -> EitherT ServantErr IO User
-createUserR u = lift $ do
-                  print u
-                  i <- nextId userDir
-                  let u' = changeId u i
-                  writeUser (userDir ++ show i) u'
-                  return u'
 
 createIssueR :: ProjectId -> EitherT ServantErr IO Issue
 createIssueR p = throwServantErr $ createIssue issueDir projectDir p
