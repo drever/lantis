@@ -28,6 +28,7 @@ import Control.Monad.Trans.Either
 import Data.Yaml
 
 import Data.List.Split
+import Data.Time
 
 nextId :: FilePath -> IO Int
 nextId fp = do
@@ -40,7 +41,8 @@ createIssue :: FilePath -> FilePath -> ProjectId -> EitherT String IO Issue
 createIssue ip pp pi = do
     project <- readProject pp pi
     i <- liftIO $ nextId ip
-    let newIssue = emptyIssue i (projectId project)
+    t <- liftIO getCurrentTime
+    let newIssue = emptyIssue i (projectId project) t
     liftIO $ putStrLn $ "Create new issue " ++ show i ++ " for project " ++ show pi
     liftIO $ encodeFile (ip ++ "/" ++ show i ++ ".yaml") newIssue
     liftIO $ encodeFile (pp ++ "/" ++ show pi ++ ".yaml") (addIssue newIssue project)
@@ -99,10 +101,11 @@ setIssueStatus :: FilePath -> IssueId -> Status -> EitherT GeneralError IO Issue
 setIssueStatus fp i s = do
     liftIO . putStrLn $ "Change status of issue " ++ show i ++ " to " ++ show s
     mi <- liftIO $ decodeFile (yamlFile fp i)
+    t <- liftIO getCurrentTime
     maybe 
         (left $ "Could not update issue status. Issue not found: " ++ show i)
         (\ri -> do
-            let ii = ri { issueStatus = s }
+            let ii = ri { issueStatus = s, issueLastUpdate = t }
             liftIO $ encodeFile (yamlFile fp i) ii
             right ii)
         mi

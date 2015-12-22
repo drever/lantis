@@ -29,26 +29,26 @@ import GHC.Generics
 instance FromText Status where
     fromText = Just . read . T.unpack
 
-emptyIssue :: IssueId -> ProjectId -> Issue
-emptyIssue i p =
+emptyIssue :: IssueId -> ProjectId -> UTCTime -> Issue
+emptyIssue i p t =
         Issue
-	    New -- status
-	    "empty" --summary 
-	    "empty" --description
-	    [] -- tags
-	    [] -- relationships
-	    i -- issueId 
-	    p -- issueProject :: ProjectId
-	    Nothing -- issueCategory :: Maybe Category 
-	    (UTCTime (fromGregorian 1970 0 0) 0)--issueDateSubmitted :: UTCTime
-	    (UTCTime (fromGregorian 1970 0 0) 0)--issueLastUpdate :: UTCTime
-	    0 --issueReporter :: UserId
-	    Public --issueViewStatus :: ViewStatus
-	    Nothing --issueAssignedTo :: Maybe User
-	    Nothing --issueSeverity :: Maybe Severity
-	    Nothing --issuePriority :: Maybe Priority
-	    Nothing --issueReproducibility :: Maybe Reproducibility 
-	    Nothing --issueResolution :: Maybe Resolution
+        New -- status
+        "empty" --summary 
+        "empty" --description
+        [] -- tags
+        [] -- relationships
+        i -- issueId 
+        p -- issueProject :: ProjectId
+        Nothing -- issueCategory :: Maybe Category 
+        t--issueDateSubmitted :: UTCTime
+        t--issueLastUpdate :: UTCTime
+        0 --issueReporter :: UserId
+        Public --issueViewStatus :: ViewStatus
+        Nothing --issueAssignedTo :: Maybe User
+        Nothing --issueSeverity :: Maybe Severity
+        Nothing --issuePriority :: Maybe Priority
+        Nothing --issueReproducibility :: Maybe Reproducibility 
+        Nothing --issueResolution :: Maybe Resolution
 
 type ProjectId = Int
 type IssueId = Int
