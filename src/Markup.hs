@@ -46,8 +46,16 @@ instance B.ToMarkup IssueE where
     toMarkup (IssueE i) = do
         BH.div BH.! A.id "issue" BH.! A.class_ "edit" $ do
              BH.button BH.! A.class_ "delete" BH.! A.onclick "lantis.hideIssue()" $ "X" 
-             BH.h2 $ BH.toMarkup $ T.unpack $ issueSummary i 
-             BH.string (T.unpack $ issueDescription i)
+             BH.h2 $ BH.toMarkup $ "#" ++ show (issueId i) ++ ": " ++  T.unpack (issueSummary i)
+             BH.ul $ do
+                 BH.li . BH.toMarkup $ "Created: " ++ show (issueDateSubmitted i)
+                 BH.li . BH.toMarkup $ "Last updated: " ++ show (issueLastUpdate i)
+             renderMarkdown (issueDescription i)             
+
+renderMarkdown :: T.Text -> BH.Markup
+renderMarkdown b = do
+    let sp = T.splitOn "\n" b 
+    sequence_ (map (\x -> BH.div (BH.string $ T.unpack x)) sp)
 
 controls :: BH.Markup
 controls = 
