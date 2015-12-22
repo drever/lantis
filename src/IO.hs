@@ -13,6 +13,7 @@ module IO (
   , readIssue
   , setIssueStatus
   , readProject
+  , removeIssueIdFromProject
     ) where
 
 import Control.Monad.Trans
@@ -83,11 +84,19 @@ deleteIssue ip pp i = do
     liftIO $ putStrLn $ "Delete issue " ++ show i
     liftIO $ removeFile ip'
     pid <- projectIdForIssue pp i
-    p <- readProject pp pid    
-    liftIO $ writeFile (pp ++ "/" ++ show pid ++ ".yaml") (T.unpack $ renderProject $ removeIssue i p) 
-    return i
-    where ip' = ip ++ show i ++ ".yaml"
-  
+    removeIssueIdFromProject pp i pid
+    right i
+    where ip' = ip ++ show i ++ ".yaml" 
+
+removeIssueIdFromProject :: FilePath -> IssueId -> ProjectId -> EitherT GeneralError IO ()
+removeIssueIdFromProject fp iid pid = do
+    liftIO $ putStrLn $ "Removing issue " ++ show iid ++ " from project " ++ show pid
+    mp <- (liftIO $ decodeFile (pp' pid))
+    maybe (left $ "Project " ++ show pid ++ " not found")
+          (\p -> liftIO $ encodeFile (pp' pid) (removeIssue iid p))
+          mp 
+    where pp' pid = fp ++ "/" ++ show pid ++ ".yaml"
+
 projectIdForIssue :: FilePath -> IssueId -> EitherT GeneralError IO ProjectId
 projectIdForIssue fp i = do
     ps <- liftIO $ listDirectory fp
@@ -136,4 +145,3 @@ readProject fp pi = do
     liftIO . putStrLn $ "Read project " ++ show pi
     p <- liftIO (decodeFileEither (fp ++ "/" ++ show pi ++ ".yaml"))
     bimapEitherT show id (hoistEither p)
-
