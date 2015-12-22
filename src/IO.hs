@@ -2,6 +2,7 @@
 
 module IO (
     createIssue
+  , writeIssue
   , deleteIssue
   , projectIdForIssue
   , readIssue
@@ -47,6 +48,9 @@ createIssue ip pp pi = do
     liftIO $ encodeFile (yamlFile ip i) newIssue
     liftIO $ encodeFile (yamlFile pp pi) (addIssue newIssue project)
     return newIssue
+
+writeIssue :: FilePath -> Issue -> EitherT String IO ()
+writeIssue fp i = liftIO $ encodeFile fp i
 
 deleteIssue :: FilePath -> FilePath -> IssueId -> EitherT String IO IssueId
 deleteIssue ip pp i = do

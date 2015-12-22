@@ -2,13 +2,18 @@ module Testing where
 
 import Test.QuickCheck.Arbitrary
 import Test.QuickCheck
+import Test.QuickCheck.Monadic
 
 import qualified Data.Text as T
 import Data.Time
 
 import Model
+import IO
 
+import Control.Monad.Trans.Either
 
+-- Arbitrary instances
+--
 instance Arbitrary Status where
     arbitrary = toEnum `fmap` choose (0, 8)
 
@@ -83,3 +88,15 @@ instance Arbitrary Issue where
         reproducability <- arbitrary
         resolution <- arbitrary
         return $ Issue status summary description tags relationships iid project category dateSubmitted lastUpdate reporter viewStatus assignedTo severity prio reproducability resolution
+
+-- Properties
+--
+{-
+prop_setIssueState = monadicIO $ do
+    let i = generate arbitrary
+    writeIssue "1.yaml" i
+    let ns = generate arbitrary
+    setIssueStatus "" 1 ns
+    ri <- runEitherT $ readIssue "" 1
+    assert (ri { issueStatus = issueStatus i } == i)
+    assert (issueStatus ri == ns)-}
