@@ -70,8 +70,7 @@ projectR x = throwServantErr $ do
                  return (p, is)
 
 setIssueStatusR :: IssueId -> Maybe Status -> EitherT ServantErr IO Issue
-setIssueStatusR i (Just s) = throwServantErr $ do
-    liftIO $ putStrLn ("Setting issue status of issue " ++ show i ++ " to " ++ show s)
+setIssueStatusR i (Just s) = throwServantErr $
     setIssueStatus issueDir i s
 setIssueStatusR _ Nothing = left err500
 

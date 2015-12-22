@@ -129,16 +129,19 @@ readIssue fp ii = do
     bimapEitherT show id (hoistEither i)
 
 setIssueStatus :: FilePath -> IssueId -> Status -> EitherT GeneralError IO Issue
-setIssueStatus fp i s = undefined {-do
-    h <- guardedFileOp (`openFile` ReadMode) isf
-    issue <- liftIO $ hGetContents h
-    parsedIssue <- cid s `fmap` hoistEither (parseIssue issue)
-    liftIO $ hClose h
-    liftIO $ writeFile isf (T.unpack $ renderIssue parsedIssue)
-    return parsedIssue
-    where cid :: Status -> Issue -> Issue
-          cid s i = i { issueStatus = s }
-          isf = fp ++ "/" ++ show i-}
+setIssueStatus fp i s = do
+    liftIO . putStrLn $ "Change status of issue " ++ show i ++ " to " ++ show s
+    mi <- liftIO $ decodeFile (yamlFile fp i)
+    maybe 
+        (left $ "Could not update issue status. Issue not found: " ++ show i)
+        (\ri -> do
+            let ii = ri { issueStatus = s }
+            liftIO $ encodeFile (yamlFile fp i) ii
+            right ii)
+        mi
+
+yamlFile :: FilePath -> Int -> FilePath
+yamlFile fp i = fp ++ "/" ++ show i ++ ".yaml"
 
 readProject :: FilePath -> ProjectId -> EitherT GeneralError IO Project
 readProject fp pi = do
