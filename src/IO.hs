@@ -80,6 +80,7 @@ createIssue ip pp pi = do
 
 deleteIssue :: FilePath -> FilePath -> IssueId -> EitherT String IO IssueId
 deleteIssue ip pp i = do
+    liftIO $ putStr $ "Deleting issue " ++ show i
     liftIO $ removeFile ip'
     pid <- projectIdForIssue pp i
     p <- readProject pp pid    
@@ -90,16 +91,31 @@ deleteIssue ip pp i = do
 projectIdForIssue :: FilePath -> IssueId -> EitherT GeneralError IO ProjectId
 projectIdForIssue fp i = do
     ps <- liftIO $ listDirectory fp
-    let pids = filterM (\pf -> do  
-                   p <- readProject fp (read pf) 
-		   return $ i `elem` projectIssues p) ps
-    l <- length `fmap` pids
-    if l > 0
-        then fmap (read . head) pids
-        else left $ "Invalid issue. An issue has to belong to exactly one project. This issue is orphaned." ++ show i
+    projectId `fmap` projectIdForIssue' fp i ps
 
+projectIdForIssue' :: FilePath -> IssueId -> [FilePath] -> EitherT GeneralError IO Project
+projectIdForIssue' fp i [] = left $ "No project containting issue " ++ show i ++ " found"
+projectIdForIssue' fp i (x:xs) = 
+        maybe 
+            (projectIdForIssue' fp i xs)  
+            (\x -> do p <- readProject fp x
+                      if i `elem` projectIssues p
+                         then return p
+                         else projectIdForIssue' fp i xs)
+            (idForFilePath x)
+
+idForFilePath :: FilePath -> Maybe Int
+idForFilePath fp = do
+    let sp = splitOn "." fp
+    if (length sp > 1) && ((sp !! 1) == "yaml") && (isNumeric $ head sp)
+        then Just $ (read . head) sp
+        else Nothing
+    where isNumeric s = (length $ filter (`notElem` ['0'.. '9']) s) == 0
+    
+    
 readIssue :: FilePath -> IssueId -> EitherT GeneralError IO Issue
 readIssue fp ii = do
+    liftIO . putStrLn $ "Read issue " ++ show ii
     i <- liftIO (decodeFileEither (fp ++ "/" ++ show ii ++ ".yaml"))
     bimapEitherT show id (hoistEither i)
 
@@ -117,6 +133,7 @@ setIssueStatus fp i s = undefined {-do
 
 readProject :: FilePath -> ProjectId -> EitherT GeneralError IO Project
 readProject fp pi = do
+    liftIO . putStrLn $ "Read project " ++ show pi
     p <- liftIO (decodeFileEither (fp ++ "/" ++ show pi ++ ".yaml"))
     bimapEitherT show id (hoistEither p)
 
