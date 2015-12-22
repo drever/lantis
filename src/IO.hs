@@ -44,27 +44,25 @@ createIssue ip pp pi = do
     t <- liftIO getCurrentTime
     let newIssue = emptyIssue i (projectId project) t
     liftIO $ putStrLn $ "Create new issue " ++ show i ++ " for project " ++ show pi
-    liftIO $ encodeFile (ip ++ "/" ++ show i ++ ".yaml") newIssue
-    liftIO $ encodeFile (pp ++ "/" ++ show pi ++ ".yaml") (addIssue newIssue project)
+    liftIO $ encodeFile (yamlFile ip i) newIssue
+    liftIO $ encodeFile (yamlFile pp pi) (addIssue newIssue project)
     return newIssue
 
 deleteIssue :: FilePath -> FilePath -> IssueId -> EitherT String IO IssueId
 deleteIssue ip pp i = do
     liftIO $ putStrLn $ "Delete issue " ++ show i
-    liftIO $ removeFile ip'
+    liftIO . removeFile $ yamlFile ip i
     pid <- projectIdForIssue pp i
     removeIssueIdFromProject pp i pid
     right i
-    where ip' = ip ++ show i ++ ".yaml" 
 
 removeIssueIdFromProject :: FilePath -> IssueId -> ProjectId -> EitherT GeneralError IO ()
 removeIssueIdFromProject fp iid pid = do
     liftIO $ putStrLn $ "Remove issue " ++ show iid ++ " from project " ++ show pid
-    mp <- (liftIO $ decodeFile (pp' pid))
+    mp <- (liftIO $ decodeFile (yamlFile fp pid))
     maybe (left $ "Project " ++ show pid ++ " not found")
-          (\p -> liftIO $ encodeFile (pp' pid) (removeIssue iid p))
+          (\p -> liftIO $ encodeFile (yamlFile fp pid) (removeIssue iid p))
           mp 
-    where pp' pid = fp ++ "/" ++ show pid ++ ".yaml"
 
 projectIdForIssue :: FilePath -> IssueId -> EitherT GeneralError IO ProjectId
 projectIdForIssue fp i = do
@@ -94,7 +92,7 @@ idForFilePath fp = do
 readIssue :: FilePath -> IssueId -> EitherT GeneralError IO Issue
 readIssue fp ii = do
     liftIO . putStrLn $ "Read issue " ++ show ii
-    i <- liftIO (decodeFileEither (fp ++ "/" ++ show ii ++ ".yaml"))
+    i <- liftIO (decodeFileEither (yamlFile fp ii))
     bimapEitherT show id (hoistEither i)
 
 setIssueStatus :: FilePath -> IssueId -> Status -> EitherT GeneralError IO Issue
