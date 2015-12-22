@@ -15,7 +15,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Either
 
 import Model (Issue (..), Project (..), Status (..), User (..), IssueE (..), IssueId, ProjectId, changeId)
-import IO (nextId, readIssue, deleteIssue, setIssueStatus, createIssue, readProject)
+import IO (readIssue, deleteIssue, setIssueStatus, createIssue, readProject)
 
 import Environment (userDir, issueDir, projectDir, jsDir, cssDir, imgDir)
 

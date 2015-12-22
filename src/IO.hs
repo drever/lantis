@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module IO (
-    nextId
-  , createIssue
+    createIssue
   , deleteIssue
   , projectIdForIssue
   , readIssue
@@ -29,10 +28,11 @@ import Data.Yaml
 
 import Data.List.Split
 import Data.Time
+import Data.Maybe 
 
 nextId :: FilePath -> IO Int
 nextId fp = do
-    c <- map (read . head . splitOn ".") `fmap` listDirectory fp
+    c <- mapMaybe idForFilePath `fmap` listDirectory fp
     if null c 
         then return 1 
         else return $ maximum c + 1
