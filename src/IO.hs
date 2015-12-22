@@ -90,7 +90,7 @@ deleteIssue ip pp i = do
 
 removeIssueIdFromProject :: FilePath -> IssueId -> ProjectId -> EitherT GeneralError IO ()
 removeIssueIdFromProject fp iid pid = do
-    liftIO $ putStrLn $ "Removing issue " ++ show iid ++ " from project " ++ show pid
+    liftIO $ putStrLn $ "Remove issue " ++ show iid ++ " from project " ++ show pid
     mp <- (liftIO $ decodeFile (pp' pid))
     maybe (left $ "Project " ++ show pid ++ " not found")
           (\p -> liftIO $ encodeFile (pp' pid) (removeIssue iid p))
