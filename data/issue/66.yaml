@@ -13,10 +13,10 @@ issueViewStatus: Public
 issueTags: []
 issueRelationships: []
 issueSeverity: null
-issueLastUpdate: 1970-01-01T00:00:00Z
+issueLastUpdate: 2015-12-26T13:08:15.020512Z
 issueAssignedTo: null
 issueStatus: New
 issueReporter: 0
 issuePriority: null
 issueReproducibility: null
-issueCategory: null
+issueCategory: Bug
