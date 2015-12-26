@@ -15,7 +15,7 @@ import Control.Monad.Trans.Either
 -- Arbitrary instances
 --
 instance Arbitrary Status where
-    arbitrary = toEnum `fmap` choose (0, 8)
+    arbitrary = toEnum `fmap` choose (0, 9)
 
 instance Arbitrary Project where
     arbitrary = do

@@ -66,6 +66,7 @@ type IssueId = Int
 data Status =
       InProgress
     | Done
+    | Backlog
     | New
     | Feedback
     | Acknowledged
