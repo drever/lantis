@@ -7,10 +7,13 @@ module Markup (
 import qualified Text.Blaze as B
 import qualified Text.Blaze.Html5 as BH
 import qualified Text.Blaze.Html5.Attributes as A
+import Text.Blaze.Internal
+
+import Data.Maybe
 
 import qualified Data.Text as T
 
-import Model (Issue (..), Project (..), IssueE (..), Status (..))
+import Model (Issue (..), Project (..), IssueE (..), Status (..), categories)
 
 instance B.ToMarkup Issue where
     toMarkup = card
@@ -44,13 +47,17 @@ instance B.ToMarkup (Project, [Issue]) where
 
 instance B.ToMarkup IssueE where
     toMarkup (IssueE i) = do
-        BH.div BH.! A.id "issue" BH.! A.class_ "edit" $ do
+        BH.div BH.! A.id (BH.toValue $ show (issueId i)) BH.! A.class_ "edit" $ do
              BH.button BH.! A.class_ "delete" BH.! A.onclick "lantis.hideIssue()" $ "X" 
              BH.h2 $ BH.toMarkup $ "#" ++ show (issueId i) ++ ": " ++  T.unpack (issueSummary i)
              BH.ul $ do
                  BH.li . BH.toMarkup $ "Created: " ++ show (issueDateSubmitted i)
                  BH.li . BH.toMarkup $ "Last updated: " ++ show (issueLastUpdate i)
              BH.div . BH.i . BH.string . show $ issueStatus i
+             BH.div . (BH.select ! A.onchange "lantis.setIssueCategory(this)") $
+                 sequence_ (
+                      ((BH.option !? (isNothing $ issueCategory i, A.selected "")) . BH.string $ "") : 
+                      (map (\x -> (BH.option !? (maybe False (==x) (issueCategory i), A.selected "")) . BH.string $ show x) categories))
              renderMarkdown (issueDescription i)             
 
 renderMarkdown :: T.Text -> BH.Markup
@@ -76,3 +83,5 @@ card i = BH.div BH.! A.id (BH.toValue ("issue" ++ show (issueId i))) BH.! A.clas
       BH.ul $ 
                BH.li $ BH.toMarkup $ "#" ++ show (issueId i)
       BH.string (T.unpack $ issueDescription i)
+
+

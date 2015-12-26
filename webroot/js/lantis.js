@@ -24,7 +24,7 @@
         }
   
         lantis.hideIssue = function () {
-             $('#issue').remove();
+             $('.edit').remove();
         }
 
         lantis.issueIdFromCard = function (issue) {
@@ -64,4 +64,17 @@
                  $(data).appendTo(targetColumn);
             }); 
 	}
+
+    lantis.setIssueCategory = function (event){
+        var newCategory = $("option:selected").text();
+        var issueId = $(event).closest(".edit").attr("id");
+        $.ajax({
+            url: "../setIssueCategory/" + issueId + "?category=" + newCategory,
+            method: 'POST'
+        })
+         .done(function (data) {
+             //console.log(data);
+         });
+    }
+
 }(window.lantis = window.lantis || {}, jQuery));

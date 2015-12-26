@@ -14,8 +14,8 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Either
 
-import Model (Issue (..), Project (..), Status (..), User (..), IssueE (..), IssueId, ProjectId)
-import IO (readIssue, deleteIssue, setIssueStatus, createIssue, readProject)
+import Model (Issue (..), Project (..), Status (..), User (..), IssueE (..), Category (..), IssueId, ProjectId)
+import IO (readIssue, deleteIssue, setIssueStatus, setIssueCategory, createIssue, readProject)
 
 import Environment (userDir, issueDir, projectDir, jsDir, cssDir, imgDir)
 
@@ -33,6 +33,7 @@ type UserAPI = "createIssue" :> Capture "id" ProjectId :> Post '[HTML] Issue
          :<|> "issueEdit" :> Capture "id" IssueId :> Get '[HTML] IssueE
          :<|> "project" :> Capture "id" ProjectId :> Get '[HTML] (Project, [Issue])
          :<|> "setIssueStatus" :> Capture "id" IssueId :> QueryParam "status" Status :> Post '[HTML] Issue
+         :<|> "setIssueCategory" :> Capture "id" IssueId :> QueryParam "category" Category :> Post '[HTML] Issue
          :<|> "js" :> Raw
          :<|> "css" :> Raw
          :<|> "img" :> Raw
@@ -40,6 +41,7 @@ type UserAPI = "createIssue" :> Capture "id" ProjectId :> Post '[HTML] Issue
          :<|> "testissue" :> Get '[HTML] Issue
          :<|> "testproject" :> Get '[HTML] Project
          :<|> "testprojectissues" :> Get '[HTML] (Project, [Issue])
+         :<|> "testissueE" :> Get '[HTML] IssueE
 
 userAPI :: Proxy UserAPI
 userAPI = Proxy
@@ -50,6 +52,7 @@ server = createIssueR
    :<|> issueEditR
    :<|> projectR 
    :<|> setIssueStatusR
+   :<|> setIssueCategoryR
    :<|> serveDirectory jsDir
    :<|> serveDirectory cssDir
    :<|> serveDirectory imgDir
@@ -57,7 +60,8 @@ server = createIssueR
    :<|> testIssueR
    :<|> testProjectR
    :<|> testProjectIssuesR
-
+   :<|> testIssueER
+   
 createIssueR :: ProjectId -> EitherT ServantErr IO Issue
 createIssueR p = throwServantErr $ createIssue issueDir projectDir p
 
@@ -74,6 +78,10 @@ setIssueStatusR :: IssueId -> Maybe Status -> EitherT ServantErr IO Issue
 setIssueStatusR i (Just s) = throwServantErr $
     setIssueStatus issueDir i s
 setIssueStatusR _ Nothing = left err500
+
+setIssueCategoryR :: IssueId -> Maybe Category -> EitherT ServantErr IO Issue
+setIssueCategoryR i c = throwServantErr $
+    setIssueCategory issueDir i c
 
 issueR :: IssueId -> EitherT ServantErr IO Issue
 issueR x = bimapEitherT (const err500) id $ readIssue issueDir x
@@ -92,3 +100,6 @@ testProjectIssuesR = do
     p <- liftIO $ generate arbitrary
     is <- liftIO $ generate arbitrary
     return (p { projectIssues = unique $ projectIssues p, projectStatus = unique $ projectStatus p }, is)
+
+testIssueER :: EitherT ServantErr IO IssueE
+testIssueER = liftIO $ generate arbitrary

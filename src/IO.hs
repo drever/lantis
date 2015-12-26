@@ -7,6 +7,7 @@ module IO (
   , projectIdForIssue
   , readIssue
   , setIssueStatus
+  , setIssueCategory
   , readProject
   , removeIssueIdFromProject
     ) where
@@ -17,7 +18,7 @@ import Control.Monad
 import System.IO
 import System.Directory (removeFile, doesFileExist)
 
-import Model (User (..), Issue (..), Project (..), Status (..), ProjectId, IssueId, UserId, emptyIssue, addIssue, removeIssue)
+import Model (User (..), Issue (..), Project (..), Status (..), Category (..), ProjectId, IssueId, UserId, emptyIssue, addIssue, removeIssue)
 import Util (listDirectory, guardedFileOp, GeneralError)
 
 import qualified Data.Text as T
@@ -108,6 +109,19 @@ setIssueStatus fp i s = do
         (left $ "Could not update issue status. Issue not found: " ++ show i)
         (\ri -> do
             let ii = ri { issueStatus = s, issueLastUpdate = t }
+            liftIO $ encodeFile (yamlFile fp i) ii
+            right ii)
+        mi
+
+setIssueCategory :: FilePath -> IssueId -> Maybe Category -> EitherT GeneralError IO Issue
+setIssueCategory fp i c = do
+    liftIO . putStrLn $ "Change category of issue " ++ show i ++ " to " ++ show c
+    mi <- liftIO $ decodeFile (yamlFile fp i)
+    t <- liftIO getCurrentTime
+    maybe 
+        (left $ "Could not update issue status. Issue not found: " ++ show i)
+        (\ri -> do
+            let ii = ri { issueCategory = c, issueLastUpdate = t }
             liftIO $ encodeFile (yamlFile fp i) ii
             right ii)
         mi

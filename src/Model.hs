@@ -20,6 +20,8 @@ module Model (
    , emptyIssue
    , addIssue
    , removeIssue
+
+   , categories
    ) where
 
 import Data.Time
@@ -32,6 +34,9 @@ import Servant
 import GHC.Generics
 
 instance FromText Status where
+    fromText = Just . read . T.unpack
+
+instance FromText Category where
     fromText = Just . read . T.unpack
 
 emptyIssue :: IssueId -> ProjectId -> UTCTime -> Issue
@@ -81,7 +86,9 @@ data User = User {
   , userId :: UserId
 } deriving (Show, Generic)
 
-data Category = Bug | Feature | ActionItem deriving (Show, Read, Generic, Enum)
+data Category = Bug | Feature | ActionItem deriving (Show, Read, Eq, Generic, Enum)
+
+categories = [Bug, Feature, ActionItem]
 
 type UserId = Int
 type CommentId = Int

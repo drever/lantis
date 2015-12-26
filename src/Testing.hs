@@ -69,7 +69,9 @@ instance Arbitrary DiffTime where
 --
 
 instance Arbitrary Issue where
-    arbitrary = do
+    arbitrary = arbitraryIssue
+    
+arbitraryIssue = do
         status <- arbitrary
         summary <- arbitrary
         description <- arbitrary
@@ -88,6 +90,9 @@ instance Arbitrary Issue where
         reproducability <- arbitrary
         resolution <- arbitrary
         return $ Issue status summary description tags relationships iid project category dateSubmitted lastUpdate reporter viewStatus assignedTo severity prio reproducability resolution
+
+instance Arbitrary IssueE where
+    arbitrary = IssueE `fmap` arbitrary
 
 -- Properties
 --
