@@ -48,6 +48,19 @@
     padding: 15;
 }
 
+textarea{
+    width: 500;
+    height: 300;
+}
+
+textarea.modepassive{
+    background-color: green;
+}
+
+textarea.modeactive{
+    background-color: yellow;
+}
+
 button {
     background-color: rgb(225, 255, 205);
     border-right-color: rgb(225, 255, 205);
@@ -61,6 +74,11 @@ button {
 button.delete { 
     background-color: rgb(253, 188, 154);
     position: relative; 
+    float: right;
+}
+
+button.save{
+    position: relative;
     float: right;
 }
 

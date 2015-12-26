@@ -33,7 +33,7 @@ type UserAPI = "createIssue" :> Capture "id" ProjectId :> Post '[HTML] Issue
          :<|> "issueEdit" :> Capture "id" IssueId :> Get '[HTML] IssueE
          :<|> "project" :> Capture "id" ProjectId :> Get '[HTML] (Project, [Issue])
          :<|> "setIssueStatus" :> Capture "id" IssueId :> QueryParam "status" Status :> Post '[HTML] Issue
-         :<|> "setIssueCategory" :> Capture "id" IssueId :> QueryParam "category" Category :> Post '[HTML] Issue
+         :<|> "setIssueCategory" :> Capture "id" IssueId :> QueryParam "category" Category :> Post '[HTML] IssueE
          :<|> "js" :> Raw
          :<|> "css" :> Raw
          :<|> "img" :> Raw
@@ -79,9 +79,9 @@ setIssueStatusR i (Just s) = throwServantErr $
     setIssueStatus issueDir i s
 setIssueStatusR _ Nothing = left err500
 
-setIssueCategoryR :: IssueId -> Maybe Category -> EitherT ServantErr IO Issue
+setIssueCategoryR :: IssueId -> Maybe Category -> EitherT ServantErr IO IssueE
 setIssueCategoryR i c = throwServantErr $
-    setIssueCategory issueDir i c
+    IssueE `fmap` setIssueCategory issueDir i c
 
 issueR :: IssueId -> EitherT ServantErr IO Issue
 issueR x = bimapEitherT (const err500) id $ readIssue issueDir x

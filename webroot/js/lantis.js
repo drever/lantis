@@ -67,14 +67,28 @@
 
     lantis.setIssueCategory = function (event){
         var newCategory = $("option:selected").text();
-        var issueId = $(event).closest(".edit").attr("id");
+        var editDiv = $(event).closest(".edit");
+        var issueId = editDiv.attr("id");
+
         $.ajax({
             url: "../setIssueCategory/" + issueId + "?category=" + newCategory,
             method: 'POST'
         })
          .done(function (data) {
+             $("#content .edit").remove();
+             $("#content").append(data);
              //console.log(data);
          });
+    }
+
+    lantis.setEditModeActive = function (event){
+            $(event).removeClass("modepassive");
+            $(event).addClass("modeactive");
+    }
+
+    lantis.setEditModePassive = function (event){
+            $(event).removeClass("modeactive");
+            $(event).addClass("modepassive");
     }
 
 }(window.lantis = window.lantis || {}, jQuery));
