@@ -8,6 +8,7 @@ module IO (
   , readIssue
   , setIssueStatus
   , setIssueCategory
+  , setIssueDescription
   , readProject
   , removeIssueIdFromProject
     ) where
@@ -122,6 +123,19 @@ setIssueCategory fp i c = do
         (left $ "Could not update issue status. Issue not found: " ++ show i)
         (\ri -> do
             let ii = ri { issueCategory = c, issueLastUpdate = t }
+            liftIO $ encodeFile (yamlFile fp i) ii
+            right ii)
+        mi
+
+setIssueDescription :: FilePath -> IssueId -> String -> EitherT GeneralError IO Issue
+setIssueDescription fp i d = do
+    liftIO . putStrLn $ "Change description of issue " ++ show i ++ " to " ++ show d
+    mi <- liftIO $ decodeFile (yamlFile fp i)
+    t <- liftIO getCurrentTime
+    maybe 
+        (left $ "Could not update issue description. Issue not found: " ++ show i)
+        (\ri -> do
+            let ii = ri { issueDescription = T.pack d, issueLastUpdate = t }
             liftIO $ encodeFile (yamlFile fp i) ii
             right ii)
         mi

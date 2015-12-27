@@ -60,7 +60,7 @@ instance B.ToMarkup IssueE where
                       (map (\x -> (BH.option !? (maybe False (==x) (issueCategory i), A.selected "")) . BH.string $ show x) categories))
              renderMarkdown (issueDescription i)
              BH.button 
-                 BH.! A.onclick "lantis.setEditModePassive($('.modeactive'))" 
+                 BH.! A.onclick "lantis.setIssueDescription($('.modeactive'));lantis.setEditModePassive($('.modeactive'));" 
                  BH.! A.class_ "save" $ "save"
 
 renderMarkdown :: T.Text -> BH.Markup

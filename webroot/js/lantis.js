@@ -77,7 +77,21 @@
          .done(function (data) {
              $("#content .edit").remove();
              $("#content").append(data);
-             //console.log(data);
+         });
+    }
+
+    lantis.setIssueDescription = function (event){
+        var newDescription = $(event).val();
+        var editDiv = $(event).closest(".edit");
+        var issueId = editDiv.attr("id");
+
+        $.ajax({
+            url: encodeURI("../setIssueDescription/" + issueId + "?description=" + newDescription),
+            method: 'POST'
+        })
+         .done(function (data) {
+             $("#content .edit").remove();
+             $("#content").append(data);
          });
     }
 

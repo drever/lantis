@@ -15,7 +15,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Either
 
 import Model (Issue (..), Project (..), Status (..), User (..), IssueE (..), Category (..), IssueId, ProjectId)
-import IO (readIssue, deleteIssue, setIssueStatus, setIssueCategory, createIssue, readProject)
+import IO (readIssue, deleteIssue, setIssueStatus, setIssueCategory, setIssueDescription, createIssue, readProject)
 
 import Environment (userDir, issueDir, projectDir, jsDir, cssDir, imgDir)
 
@@ -34,6 +34,8 @@ type UserAPI = "createIssue" :> Capture "id" ProjectId :> Post '[HTML] Issue
          :<|> "project" :> Capture "id" ProjectId :> Get '[HTML] (Project, [Issue])
          :<|> "setIssueStatus" :> Capture "id" IssueId :> QueryParam "status" Status :> Post '[HTML] Issue
          :<|> "setIssueCategory" :> Capture "id" IssueId :> QueryParam "category" Category :> Post '[HTML] IssueE
+         :<|> "setIssueDescription" :> Capture "id" IssueId :> QueryParam "description" String :> Post '[HTML] IssueE
+
          :<|> "js" :> Raw
          :<|> "css" :> Raw
          :<|> "img" :> Raw
@@ -53,6 +55,8 @@ server = createIssueR
    :<|> projectR 
    :<|> setIssueStatusR
    :<|> setIssueCategoryR
+   :<|> setIssueDescriptionR
+
    :<|> serveDirectory jsDir
    :<|> serveDirectory cssDir
    :<|> serveDirectory imgDir
@@ -75,13 +79,18 @@ projectR x = throwServantErr $ do
                  return (p, is)
 
 setIssueStatusR :: IssueId -> Maybe Status -> EitherT ServantErr IO Issue
+setIssueStatusR _ Nothing = left err500
 setIssueStatusR i (Just s) = throwServantErr $
     setIssueStatus issueDir i s
-setIssueStatusR _ Nothing = left err500
 
 setIssueCategoryR :: IssueId -> Maybe Category -> EitherT ServantErr IO IssueE
 setIssueCategoryR i c = throwServantErr $
     IssueE `fmap` setIssueCategory issueDir i c
+
+setIssueDescriptionR :: IssueId -> Maybe String -> EitherT ServantErr IO IssueE
+setIssueDescriptionR _ Nothing = left err500
+setIssueDescriptionR i (Just d) = throwServantErr $
+    IssueE `fmap` setIssueDescription issueDir i d
 
 issueR :: IssueId -> EitherT ServantErr IO Issue
 issueR x = bimapEitherT (const err500) id $ readIssue issueDir x
