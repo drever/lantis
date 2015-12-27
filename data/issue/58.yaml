@@ -10,10 +10,10 @@ issueViewStatus: Public
 issueTags: []
 issueRelationships: []
 issueSeverity: null
-issueLastUpdate: 2015-12-26T13:19:49.511244Z
+issueLastUpdate: 2015-12-27T11:05:52.553732Z
 issueAssignedTo: null
 issueStatus: New
 issueReporter: 0
 issuePriority: null
 issueReproducibility: null
-issueCategory: null
+issueCategory: ActionItem

@@ -10,10 +10,10 @@ issueViewStatus: Public
 issueTags: []
 issueRelationships: []
 issueSeverity: null
-issueLastUpdate: 2015-12-26T13:19:48.455875Z
+issueLastUpdate: 2015-12-27T11:06:24.026699Z
 issueAssignedTo: null
-issueStatus: New
+issueStatus: InProgress
 issueReporter: 0
 issuePriority: null
 issueReproducibility: null
-issueCategory: null
+issueCategory: Bug

@@ -23,16 +23,17 @@ issueDescription: ! 'The issuebody is just one line. Make it more then one line 
 
 
 
+
 '
 issueSummary: Multiline support for issue body
 issueViewStatus: Public
 issueTags: []
 issueRelationships: []
 issueSeverity: null
-issueLastUpdate: 2015-12-26T13:19:50.523079Z
+issueLastUpdate: 2015-12-27T11:06:15.951615Z
 issueAssignedTo: null
-issueStatus: New
+issueStatus: Done
 issueReporter: 0
 issuePriority: null
 issueReproducibility: null
-issueCategory: null
+issueCategory: Bug

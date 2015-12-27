@@ -1,0 +1,17 @@
+issueId: 70
+issueDateSubmitted: 2015-12-27T11:03:28.296196Z
+issueProject: 1
+issueResolution: null
+issueDescription: The text field in the issue edit view adds a newline on each save.
+issueSummary: Newline on description save
+issueViewStatus: Public
+issueTags: []
+issueRelationships: []
+issueSeverity: null
+issueLastUpdate: 2015-12-27T11:04:03.656703Z
+issueAssignedTo: null
+issueStatus: New
+issueReporter: 0
+issuePriority: null
+issueReproducibility: null
+issueCategory: Bug
