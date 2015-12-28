@@ -48,17 +48,24 @@
     padding: 15;
 }
 
+.edit input{
+    position:relative;
+    float:right;
+    background-color:green;
+
+}
+
 textarea{
     width: 500;
     height: 300;
 }
 
-textarea.modepassive{
+.modepassive{
     background-color: green;
 }
 
-textarea.modeactive{
-    background-color: yellow;
+.modeactive{
+    background-color: gray;
 }
 
 button {

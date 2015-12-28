@@ -15,7 +15,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Either
 
 import Model (Issue (..), Project (..), Status (..), User (..), IssueE (..), Category (..), IssueId, ProjectId)
-import IO (readIssue, deleteIssue, setIssueStatus, setIssueCategory, setIssueDescription, createIssue, readProject)
+import IO (readIssue, deleteIssue, setIssueStatus, setIssueCategory, setIssueSummary, setIssueDescription, createIssue, readProject)
 
 import Environment (userDir, issueDir, projectDir, jsDir, cssDir, imgDir)
 
@@ -35,6 +35,7 @@ type UserAPI = "createIssue" :> Capture "id" ProjectId :> Post '[HTML] Issue
          :<|> "setIssueStatus" :> Capture "id" IssueId :> QueryParam "status" Status :> Post '[HTML] Issue
          :<|> "setIssueCategory" :> Capture "id" IssueId :> QueryParam "category" Category :> Post '[HTML] IssueE
          :<|> "setIssueDescription" :> Capture "id" IssueId :> QueryParam "description" String :> Post '[HTML] IssueE
+         :<|> "setIssueSummary" :> Capture "id" IssueId :> QueryParam "summary" String :> Post '[HTML] IssueE
 
          :<|> "js" :> Raw
          :<|> "css" :> Raw
@@ -56,6 +57,7 @@ server = createIssueR
    :<|> setIssueStatusR
    :<|> setIssueCategoryR
    :<|> setIssueDescriptionR
+   :<|> setIssueSummaryR
 
    :<|> serveDirectory jsDir
    :<|> serveDirectory cssDir
@@ -82,6 +84,11 @@ setIssueStatusR :: IssueId -> Maybe Status -> EitherT ServantErr IO Issue
 setIssueStatusR _ Nothing = left err500
 setIssueStatusR i (Just s) = throwServantErr $
     setIssueStatus issueDir i s
+
+setIssueSummaryR :: IssueId -> Maybe String -> EitherT ServantErr IO IssueE
+setIssueSummaryR _ Nothing = left err500
+setIssueSummaryR i (Just s) = throwServantErr $
+    IssueE `fmap` setIssueSummary issueDir i s
 
 setIssueCategoryR :: IssueId -> Maybe Category -> EitherT ServantErr IO IssueE
 setIssueCategoryR i c = throwServantErr $

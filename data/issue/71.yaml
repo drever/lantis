@@ -1,0 +1,18 @@
+issueId: 71
+issueDateSubmitted: 2015-12-28T11:18:00.128286Z
+issueProject: 1
+issueResolution: null
+issueDescription: At the moment the project view is not updated when the edit view
+  is closed and something was edited.
+issueSummary: Change issue when edit view is closed
+issueViewStatus: Public
+issueTags: []
+issueRelationships: []
+issueSeverity: null
+issueLastUpdate: 2015-12-28T11:19:28.390955Z
+issueAssignedTo: null
+issueStatus: New
+issueReporter: 0
+issuePriority: null
+issueReproducibility: null
+issueCategory: Feature

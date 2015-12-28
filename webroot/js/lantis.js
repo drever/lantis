@@ -95,6 +95,21 @@
          });
     }
 
+    lantis.setIssueSummary = function (event){
+        var newSummary = $(event).text();
+        var editDiv = $(event).closest(".edit");
+        var issueId = editDiv.attr("id");
+
+        $.ajax({
+            url: encodeURI("../setIssueSummary/" + issueId + "?summary=" + newSummary),
+            method: 'POST'
+        })
+         .done(function (data) {
+             $("#content .edit").remove();
+             $("#content").append(data);
+         });
+    }
+
     lantis.setEditModeActive = function (event){
             $(event).removeClass("modepassive");
             $(event).addClass("modeactive");

@@ -49,8 +49,15 @@ instance B.ToMarkup IssueE where
     toMarkup (IssueE i) = do
         BH.div BH.! A.id (BH.toValue $ show (issueId i)) BH.! A.class_ "edit" $ do
              BH.button BH.! A.class_ "delete" BH.! A.onclick "lantis.hideIssue()" $ "X" 
-             BH.h2 . BH.toMarkup $ "#" ++ show (issueId i) ++ ": " ++  T.unpack (issueSummary i)
-             BH.ul $ do
+             BH.div $ do
+                 BH.h2 (do 
+                     BH.toMarkup $ "#" ++ show (issueId i) ++ ": " 
+                     BH.span BH.! A.id "title" 
+                             BH.! (A.contenteditable $ B.toValue True) 
+                             BH.! A.onfocus "lantis.setEditModeActive(this)" 
+                             BH.! A.onblur "lantis.setIssueSummary(this);lantis.setEditModePassive(this)" 
+                             BH.! A.onkeydown "if (event.keyCode == 13) { lantis.setIssueSummary(this);lantis.setEditModePassive(this) }" $ BH.toMarkup $ T.unpack (issueSummary i))
+             BH.div . BH.ul $ do
                  BH.li . BH.toMarkup $ "Created: " ++ show (issueDateSubmitted i)
                  BH.li . BH.toMarkup $ "Last updated: " ++ show (issueLastUpdate i)
              BH.div . BH.i . BH.string . show $ issueStatus i
@@ -59,14 +66,11 @@ instance B.ToMarkup IssueE where
                       ((BH.option !? (isNothing $ issueCategory i, A.selected "")) . BH.string $ "") : 
                       (map (\x -> (BH.option !? (maybe False (==x) (issueCategory i), A.selected "")) . BH.string $ show x) categories))
              renderMarkdown (issueDescription i)
-             BH.button 
-                 BH.! A.onclick "lantis.setIssueDescription($('.modeactive'));lantis.setEditModePassive($('.modeactive'));" 
-                 BH.! A.class_ "save" $ "save"
 
 renderMarkdown :: T.Text -> BH.Markup
 renderMarkdown b = do
     let sp = T.splitOn "\n" b 
-    BH.textarea BH.! A.class_ "modepassive" BH.! A.onfocus "lantis.setEditModeActive(this)" BH.! A.onended "lantis.setEditModePassive(this)" $ sequence_ (map (BH.string . (++"\n") . T.unpack) sp)
+    BH.textarea BH.! A.class_ "modepassive" BH.! A.onfocus "lantis.setEditModeActive(this)" BH.! A.onblur "lantis.setIssueDescription(this);lantis.setEditModePassive(this)" $ sequence_ (map (BH.string . (++"\n") . T.unpack) sp)
 
 controls :: BH.Markup
 controls = 
