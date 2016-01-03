@@ -6,6 +6,7 @@ module Model (
    , User (..)
    , Issue (..)
    , IssueE (..)
+   , IssueDescription (..)
    , Status (..)
    , ViewStatus (..)
    , Category (..)
@@ -134,6 +135,7 @@ data Issue = Issue {
 } deriving (Show, Generic)
 
 newtype IssueE = IssueE Issue 
+newtype IssueDescription = IssueDescription T.Text
 
 -- |
 -- Aeson instances

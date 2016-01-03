@@ -11,9 +11,11 @@ import Text.Blaze.Internal
 
 import Data.Maybe
 
+import Text.Pandoc
+
 import qualified Data.Text as T
 
-import Model (Issue (..), Project (..), IssueE (..), Status (..), categories)
+import Model (Issue (..), Project (..), IssueE (..), IssueDescription (..), Status (..), categories)
 
 instance B.ToMarkup Issue where
     toMarkup = card
@@ -26,6 +28,11 @@ instance B.ToMarkup Project where
         BH.h1 $ BH.toHtml (projectName p)
         BH.ul $ 
             mapM_ (BH.li . BH.toHtml) (projectIssues p)
+
+instance B.ToMarkup IssueDescription where
+    toMarkup (IssueDescription i) = BH.toHtml $ 
+        writeHtml def md
+        where (Right md) = readMarkdown def $ T.unpack i
 
 instance B.ToMarkup Status where
     toMarkup = BH.toHtml . show
@@ -66,6 +73,7 @@ instance B.ToMarkup IssueE where
                       ((BH.option !? (isNothing $ issueCategory i, A.selected "")) . BH.string $ "") : 
                       (map (\x -> (BH.option !? (maybe False (==x) (issueCategory i), A.selected "")) . BH.string $ show x) categories))
              renderMarkdown (issueDescription i)
+             --BH.toHtml (IssueDescription $ issueDescription i)
 
 renderMarkdown :: T.Text -> BH.Markup
 renderMarkdown b = do
@@ -86,9 +94,7 @@ card :: Issue -> BH.Markup
 card i = BH.div BH.! A.id (BH.toValue ("issue" ++ show (issueId i))) BH.! A.class_ "card" BH.! A.draggable (BH.toValue True) BH.! A.ondragstart "lantis.drag(event)" BH.! A.ondblclick "lantis.editIssue(lantis.issueIdFromCard(this))" $
     BH.toHtml $ BH.html $ do
       BH.button BH.! A.class_ "delete" BH.! A.onclick (BH.toValue $ "lantis.deleteIssue(" ++ show (issueId i) ++ ")") $ "X"
-      BH.h2 $ BH.string (T.unpack $ issueSummary i)
-      BH.ul $ 
-               BH.li $ BH.toMarkup $ "#" ++ show (issueId i)
+      BH.h2 $ BH.string $ "#" ++ show (issueId i) ++ ": " ++ (T.unpack $ issueSummary i)
       BH.string (T.unpack $ issueDescription i)
 
 
