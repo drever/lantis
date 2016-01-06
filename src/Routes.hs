@@ -14,7 +14,7 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Either
 
-import Model (Issue (..), Project (..), Status (..), User (..), IssueE (..), IssueDescription (..), Category (..), IssueId, ProjectId)
+import Model (Issue (..), Project (..), Status (..), User (..), IssueE (..), IssueDescription (..), IssueDescriptionE (..), Category (..), IssueId, ProjectId)
 import IO (readIssue, deleteIssue, setIssueStatus, setIssueCategory, setIssueSummary, setIssueDescription, createIssue, readProject)
 
 import Environment (userDir, issueDir, projectDir, jsDir, cssDir, imgDir)
@@ -34,9 +34,10 @@ type UserAPI = "createIssue" :> Capture "id" ProjectId :> Post '[HTML] Issue
          :<|> "project" :> Capture "id" ProjectId :> Get '[HTML] (Project, [Issue])
          :<|> "setIssueStatus" :> Capture "id" IssueId :> QueryParam "status" Status :> Post '[HTML] Issue
          :<|> "setIssueCategory" :> Capture "id" IssueId :> QueryParam "category" Category :> Post '[HTML] IssueE
-         :<|> "setIssueDescription" :> Capture "id" IssueId :> QueryParam "description" String :> Post '[HTML] IssueE
+         :<|> "setIssueDescription" :> Capture "id" IssueId :> QueryParam "description" String :> Post '[HTML] IssueDescription
          :<|> "setIssueSummary" :> Capture "id" IssueId :> QueryParam "summary" String :> Post '[HTML] IssueE
-         :<|> "mdIssueSummary" :> Capture "id" IssueId :> Get '[HTML] IssueDescription
+         :<|> "mdIssueDescription" :> Capture "id" IssueId :> Get '[HTML] IssueDescription
+         :<|> "mdIssueDescriptionEdit" :> Capture "id" IssueId :> Get '[HTML] IssueDescriptionE
 
          :<|> "js" :> Raw
          :<|> "css" :> Raw
@@ -59,7 +60,8 @@ server = createIssueR
    :<|> setIssueCategoryR
    :<|> setIssueDescriptionR
    :<|> setIssueSummaryR
-   :<|> mdIssueSummaryR
+   :<|> mdIssueDescriptionR
+   :<|> mdIssueDescriptionEditR
 
    :<|> serveDirectory jsDir
    :<|> serveDirectory cssDir
@@ -87,8 +89,12 @@ setIssueStatusR _ Nothing = left err500
 setIssueStatusR i (Just s) = throwServantErr $
     setIssueStatus issueDir i s
 
-mdIssueSummaryR :: IssueId -> EitherT ServantErr IO IssueDescription
-mdIssueSummaryR i = throwServantErr $
+mdIssueDescriptionEditR :: IssueId -> EitherT ServantErr IO IssueDescriptionE
+mdIssueDescriptionEditR i = throwServantErr $
+    (IssueDescriptionE . issueDescription) `fmap` readIssue issueDir i
+
+mdIssueDescriptionR :: IssueId -> EitherT ServantErr IO IssueDescription
+mdIssueDescriptionR i = throwServantErr $
     (IssueDescription . issueDescription) `fmap` readIssue issueDir i
 
 setIssueSummaryR :: IssueId -> Maybe String -> EitherT ServantErr IO IssueE
@@ -100,10 +106,10 @@ setIssueCategoryR :: IssueId -> Maybe Category -> EitherT ServantErr IO IssueE
 setIssueCategoryR i c = throwServantErr $
     IssueE `fmap` setIssueCategory issueDir i c
 
-setIssueDescriptionR :: IssueId -> Maybe String -> EitherT ServantErr IO IssueE
+setIssueDescriptionR :: IssueId -> Maybe String -> EitherT ServantErr IO IssueDescription
 setIssueDescriptionR _ Nothing = left err500
 setIssueDescriptionR i (Just d) = throwServantErr $
-    IssueE `fmap` setIssueDescription issueDir i d
+    (IssueDescription . issueDescription) `fmap` setIssueDescription issueDir i d
 
 issueR :: IssueId -> EitherT ServantErr IO Issue
 issueR x = bimapEitherT (const err500) id $ readIssue issueDir x

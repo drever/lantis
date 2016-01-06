@@ -7,6 +7,7 @@ module Model (
    , Issue (..)
    , IssueE (..)
    , IssueDescription (..)
+   , IssueDescriptionE (..)
    , Status (..)
    , ViewStatus (..)
    , Category (..)
@@ -136,6 +137,7 @@ data Issue = Issue {
 
 newtype IssueE = IssueE Issue 
 newtype IssueDescription = IssueDescription T.Text
+newtype IssueDescriptionE = IssueDescriptionE T.Text
 
 -- |
 -- Aeson instances

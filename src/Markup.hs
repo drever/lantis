@@ -15,7 +15,7 @@ import Text.Pandoc
 
 import qualified Data.Text as T
 
-import Model (Issue (..), Project (..), IssueE (..), IssueDescription (..), Status (..), categories)
+import Model (Issue (..), Project (..), IssueE (..), IssueDescription (..), IssueDescriptionE (..), Status (..), categories)
 
 instance B.ToMarkup Issue where
     toMarkup = card
@@ -29,9 +29,15 @@ instance B.ToMarkup Project where
         BH.ul $ 
             mapM_ (BH.li . BH.toHtml) (projectIssues p)
 
+instance B.ToMarkup IssueDescriptionE where
+    toMarkup (IssueDescriptionE i) = BH.toHtml . (BH.textarea ! A.autofocus "autofocus" ! A.onblur "lantis.setIssueDescription(this)") . BH.string $
+        writeMarkdown def md
+        where (Right md) = readMarkdown def $ T.unpack i
+
 instance B.ToMarkup IssueDescription where
-    toMarkup (IssueDescription i) = BH.toHtml $ 
-        writeHtml def md
+    toMarkup (IssueDescription i) = do
+        (BH.div ! A.id "issueDescription" ! A.onclick "lantis.editIssueDescription(this)")
+            (BH.toHtml $ writeHtml def md)
         where (Right md) = readMarkdown def $ T.unpack i
 
 instance B.ToMarkup Status where
@@ -41,29 +47,29 @@ instance B.ToMarkup (Project, [Issue]) where
     toMarkup (p, is) = BH.html $ do
         BH.head $ do
              BH.title "lantis"
-             BH.link BH.! A.rel "stylesheet" BH.! A.type_ "text/css" BH.! A.href "../css/lantis.css"
-             BH.script BH.! A.src "../js/jquery-2.1.4.js" $ "" 
-             BH.script BH.! A.src "../js/lantis.js" $ ""
+             BH.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href "../css/lantis.css"
+             BH.script ! A.src "../js/jquery-2.1.4.js" $ "" 
+             BH.script ! A.src "../js/lantis.js" $ ""
              BH.script $ BH.toHtml $ "lantis.projectId = " ++ show (projectId p)
-        BH.div BH.! A.id "header" $ do
-             BH.body $ BH.img BH.! A.src "../img/lantis.png"
+        BH.div ! A.id "header" $ do
+             BH.body $ BH.img ! A.src "../img/lantis.png"
              BH.h1 $ BH.toHtml (projectName p)
-        BH.div BH.! A.id "content" $ do
+        BH.div ! A.id "content" $ do
              controls
              mapM_ (column is) (projectStatus p)
 
 instance B.ToMarkup IssueE where
     toMarkup (IssueE i) = do
-        BH.div BH.! A.id (BH.toValue $ show (issueId i)) BH.! A.class_ "edit" $ do
-             BH.button BH.! A.class_ "delete" BH.! A.onclick "lantis.hideIssue()" $ "X" 
+        BH.div ! A.id (BH.toValue $ show (issueId i)) ! A.class_ "edit" $ do
+             BH.button ! A.class_ "delete" ! A.onclick "lantis.hideIssue()" $ "X" 
              BH.div $ do
                  BH.h2 (do 
                      BH.toMarkup $ "#" ++ show (issueId i) ++ ": " 
-                     BH.span BH.! A.id "title" 
-                             BH.! (A.contenteditable $ B.toValue True) 
-                             BH.! A.onfocus "lantis.setEditModeActive(this)" 
-                             BH.! A.onblur "lantis.setIssueSummary(this);lantis.setEditModePassive(this)" 
-                             BH.! A.onkeydown "if (event.keyCode == 13) { lantis.setIssueSummary(this);lantis.setEditModePassive(this) }" $ BH.toMarkup $ T.unpack (issueSummary i))
+                     BH.span ! A.id "title" 
+                             ! (A.contenteditable $ B.toValue True) 
+                             ! A.onfocus "lantis.setEditModeActive(this)" 
+                             ! A.onblur "lantis.setIssueSummary(this);lantis.setEditModePassive(this)" 
+                             ! A.onkeydown "if (event.keyCode == 13) { lantis.setIssueSummary(this);lantis.setEditModePassive(this) }" $ BH.toMarkup $ T.unpack (issueSummary i))
              BH.div . BH.ul $ do
                  BH.li . BH.toMarkup $ "Created: " ++ show (issueDateSubmitted i)
                  BH.li . BH.toMarkup $ "Last updated: " ++ show (issueLastUpdate i)
@@ -72,28 +78,22 @@ instance B.ToMarkup IssueE where
                  sequence_ (
                       ((BH.option !? (isNothing $ issueCategory i, A.selected "")) . BH.string $ "") : 
                       (map (\x -> (BH.option !? (maybe False (==x) (issueCategory i), A.selected "")) . BH.string $ show x) categories))
-             renderMarkdown (issueDescription i)
-             --BH.toHtml (IssueDescription $ issueDescription i)
-
-renderMarkdown :: T.Text -> BH.Markup
-renderMarkdown b = do
-    let sp = T.splitOn "\n" b 
-    BH.textarea BH.! A.class_ "modepassive" BH.! A.onfocus "lantis.setEditModeActive(this)" BH.! A.onblur "lantis.setIssueDescription(this);lantis.setEditModePassive(this)" $ sequence_ (map (BH.string . (++"\n") . T.unpack) sp)
+             BH.toHtml . IssueDescription $ issueDescription i
 
 controls :: BH.Markup
 controls = 
-    BH.div BH.! A.id "controls" $ 
-        BH.button BH.! A.onclick "lantis.createIssue(lantis.projectId)" $ "New issue"
+    BH.div ! A.id "controls" $ 
+        BH.button ! A.onclick "lantis.createIssue(lantis.projectId)" $ "New issue"
 
 column :: [Issue] -> Status -> BH.Markup
-column is s = BH.div BH.! A.id (BH.toValue $ show s) BH.! A.class_ "column" BH.! A.ondragover "lantis.allowDrag(event)" BH.! A.ondrop "lantis.drop(event)" $ do
+column is s = BH.div ! A.id (BH.toValue $ show s) ! A.class_ "column" ! A.ondragover "lantis.allowDrag(event)" ! A.ondrop "lantis.drop(event)" $ do
     BH.h1 $ BH.toHtml s
     mapM_ card (filter (\x -> issueStatus x == s) is)
 
 card :: Issue -> BH.Markup
-card i = BH.div BH.! A.id (BH.toValue ("issue" ++ show (issueId i))) BH.! A.class_ "card" BH.! A.draggable (BH.toValue True) BH.! A.ondragstart "lantis.drag(event)" BH.! A.ondblclick "lantis.editIssue(lantis.issueIdFromCard(this))" $
+card i = BH.div ! A.id (BH.toValue ("issue" ++ show (issueId i))) ! A.class_ "card" ! A.draggable (BH.toValue True) ! A.ondragstart "lantis.drag(event)" ! A.ondblclick "lantis.editIssue(lantis.issueIdFromCard(this))" $
     BH.toHtml $ BH.html $ do
-      BH.button BH.! A.class_ "delete" BH.! A.onclick (BH.toValue $ "lantis.deleteIssue(" ++ show (issueId i) ++ ")") $ "X"
+      BH.button ! A.class_ "delete" ! A.onclick (BH.toValue $ "lantis.deleteIssue(" ++ show (issueId i) ++ ")") $ "X"
       BH.h2 $ BH.string $ "#" ++ show (issueId i) ++ ": " ++ (T.unpack $ issueSummary i)
       BH.string (T.unpack $ issueDescription i)
 

@@ -1,0 +1,21 @@
+issueId: 75
+issueDateSubmitted: 2016-01-03T16:44:45.677134Z
+issueProject: 1
+issueResolution: null
+issueDescription: ! 'The sharp symbol seems to be a special character in yaml or somewhere
+
+  else. When the following example is saved the part after the sharp is
+
+  lost. And this is another one \'
+issueSummary: ! 'Behavoir of # in yaml documents.'
+issueViewStatus: Public
+issueTags: []
+issueRelationships: []
+issueSeverity: null
+issueLastUpdate: 2016-01-06T21:53:20.487426Z
+issueAssignedTo: null
+issueStatus: New
+issueReporter: 0
+issuePriority: null
+issueReproducibility: null
+issueCategory: null
