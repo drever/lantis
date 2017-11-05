@@ -1,0 +1,25 @@
+issueId: 74
+issueDateSubmitted: 2016-01-03T16:32:51.719634Z
+issueProject: 1
+issueResolution: null
+issueDescription: ! 'The instance ToMarkdown of IssueDescription transforms the description
+  directly to HTML. This might not play well when other output format of Blaze are
+  chosen.
+
+
+  Investigate if this is a problem.
+
+
+'
+issueSummary: Correct implementation of ToMarkdown typeclass for Pandoc documents
+issueViewStatus: Public
+issueTags: []
+issueRelationships: []
+issueSeverity: null
+issueLastUpdate: 2016-01-03T16:35:22.112103Z
+issueAssignedTo: null
+issueStatus: New
+issueReporter: 0
+issuePriority: null
+issueReproducibility: null
+issueCategory: ActionItem

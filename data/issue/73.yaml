@@ -1,0 +1,17 @@
+issueId: 73
+issueDateSubmitted: 2015-12-28T11:41:38.951768Z
+issueProject: 1
+issueResolution: null
+issueDescription: I.e. the time stamp is updated even when there was no real change
+issueSummary: Only save changes when there were changes
+issueViewStatus: Public
+issueTags: []
+issueRelationships: []
+issueSeverity: null
+issueLastUpdate: 2015-12-29T20:20:58.110782Z
+issueAssignedTo: null
+issueStatus: New
+issueReporter: 0
+issuePriority: null
+issueReproducibility: null
+issueCategory: Feature

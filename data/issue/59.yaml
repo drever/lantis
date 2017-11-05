@@ -10,9 +10,9 @@ issueViewStatus: Public
 issueTags: []
 issueRelationships: []
 issueSeverity: null
-issueLastUpdate: 1970-01-01T00:00:00Z
+issueLastUpdate: 2015-12-28T11:31:40.715501Z
 issueAssignedTo: null
-issueStatus: New
+issueStatus: Backlog
 issueReporter: 0
 issuePriority: null
 issueReproducibility: null

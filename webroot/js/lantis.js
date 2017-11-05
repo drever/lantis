@@ -80,21 +80,6 @@
          });
     }
 
-    lantis.setIssueDescription = function (event){
-        var newDescription = $(event).val();
-        var editDiv = $(event).closest(".edit");
-        var issueId = editDiv.attr("id");
-
-        $.ajax({
-            url: encodeURI("../setIssueDescription/" + issueId + "?description=" + newDescription),
-            method: 'POST'
-        })
-         .done(function (data) {
-             $("#content .edit").remove();
-             $("#content").append(data);
-         });
-    }
-
     lantis.setIssueSummary = function (event){
         var newSummary = $(event).text();
         var editDiv = $(event).closest(".edit");
@@ -118,6 +103,34 @@
     lantis.setEditModePassive = function (event){
             $(event).removeClass("modeactive");
             $(event).addClass("modepassive");
+    }
+
+    lantis.editIssueDescription = function (event){
+        var editDiv = $(event).closest(".edit");
+        var issueId = editDiv.attr("id");
+        
+        $.ajax({
+            url: encodeURI("../mdIssueDescriptionEdit/" + issueId),
+            method: 'GET'
+        })
+         .done(function (data) {
+             $("#issueDescription").remove();
+             $(".edit").append(data);
+        });
+    }
+
+    lantis.setIssueDescription = function (event){
+        var editDiv = $(event).closest(".edit");
+        var issueId = editDiv.attr("id");
+        var newDescription = $(event).val();
+        $.ajax({
+            url: encodeURI("../setIssueDescription/" + issueId + "?description=" + newDescription),
+            method: 'POST'
+        })
+         .done(function (data) {
+             $(event).remove();
+             $(".edit").append(data);
+        });
     }
 
 }(window.lantis = window.lantis || {}, jQuery));

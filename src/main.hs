@@ -37,12 +37,3 @@ main = do
     let p = 8081
     putStrLn $ "Running lantis server at " ++ show p
     run p app
-
--- Testing
---
--- 1) addIssue to project
--- 2) read project
--- 3) check 
---     a) list of projects length has grown by one
---     b) new issue is part of project issues
-

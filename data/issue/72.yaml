@@ -1,19 +1,17 @@
-issueId: 58
-issueDateSubmitted: 1970-01-01T00:00:00Z
+issueId: 72
+issueDateSubmitted: 2015-12-28T11:31:54.567603Z
 issueProject: 1
 issueResolution: null
-issueDescription: ! 'Use Test.QuickCheck.Monadic
-
-'
-issueSummary: Test file IO with quickcheck
+issueDescription: '.'
+issueSummary: Add versions and milestones to project management 
 issueViewStatus: Public
 issueTags: []
 issueRelationships: []
 issueSeverity: null
-issueLastUpdate: 2015-12-28T11:31:43.240238Z
+issueLastUpdate: 2015-12-28T11:40:42.580849Z
 issueAssignedTo: null
 issueStatus: Backlog
 issueReporter: 0
 issuePriority: null
 issueReproducibility: null
-issueCategory: ActionItem
+issueCategory: Feature

@@ -7,9 +7,11 @@ Synopsis:       A bug tracking system
 Build-Type:     Simple
 
 Executable lantis
-  Build-Depends:  servant-server
+  Build-Depends:  servant
+                , servant-server
                 , servant-blaze
-                , servant-jquery
+                , servant-js
+                , exceptions
                 , blaze-markup
                 , blaze-html
                 , generic-aeson
@@ -28,6 +30,8 @@ Executable lantis
                 , yaml
                 , transformers
                 , split
+                , pandoc
+                , utf8-string < 1.1
 
   Main-Is:        main.hs
   Hs-Source-Dirs: src
