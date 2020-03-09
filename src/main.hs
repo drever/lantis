@@ -8,7 +8,6 @@ import Data.Time
 
 import System.Directory
 
-import Control.Monad.Trans.Either
 import Control.Monad.Trans
 import Control.Monad
 

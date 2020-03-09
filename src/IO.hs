@@ -22,12 +22,10 @@ import System.IO
 import System.Directory (listDirectory, removeFile, doesFileExist)
 
 import Model (User (..), Issue (..), Project (..), Status (..), Category (..), ProjectId, IssueId, UserId, emptyIssue, addIssue, removeIssue)
-import Util (guardedFileOp, GeneralError)
+import Util (GeneralError)
 
 import qualified Data.Text as T
 import Text.ParserCombinators.Parsec (ParseError)
-
-import Control.Monad.Trans.Either
 
 import Data.Yaml
 

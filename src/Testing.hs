@@ -10,8 +10,6 @@ import Data.Time
 import Model
 import IO
 
-import Control.Monad.Trans.Either
-
 -- Arbitrary instances
 --
 instance Arbitrary Status where
@@ -70,7 +68,7 @@ instance Arbitrary DiffTime where
 
 instance Arbitrary Issue where
     arbitrary = arbitraryIssue
-    
+
 arbitraryIssue = do
         status <- arbitrary
         summary <- arbitrary
